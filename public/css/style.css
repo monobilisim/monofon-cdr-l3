@@ -1,0 +1,71 @@
+h2 {
+	line-height: 50px;
+}
+
+h3 {
+	margin-bottom: 10px;
+}
+
+.alert {
+	font-weight: bold;
+}
+
+.container .hide {
+	display: none;
+}
+
+.cdr-table {
+	margin-bottom: 0;
+}
+.cdr-table td{
+	font-size: 12px;
+}
+
+.form-filter {
+	padding-bottom: 0;
+}
+.form-filter .item {
+	float: left;
+	margin: 0 10px;
+}
+.form-filter .btn {
+	margin-top: 22px;
+}
+
+.ui-datepicker select.ui-datepicker-month { width: 54% !important;}
+.ui-datepicker select.ui-datepicker-year { width: 44% !important;}
+
+.pagination {
+	float: left;
+}
+
+#per-page-container {
+	float: right;
+	margin: 22px 0;
+}
+
+#listen {
+	width: 332px;
+	margin-left: -166px;
+}
+
+#listen .modal-body p {
+	position: relative;
+	height: 32px;
+}	
+
+.spinner {
+	display: block;
+	width: 32px;
+	height: 32px;
+	background-image: url('../img/ajax-loader.gif');
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	margin-top: -16px;
+	margin-left: -16px;
+}
+
+footer {
+	clear: both;
+}
