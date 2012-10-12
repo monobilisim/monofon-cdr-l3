@@ -175,7 +175,14 @@ class Cdr_Controller extends Base_Controller {
 	public static function retrieve_file($cdr)
 	{
 		$file = array();
-		$file['path'] = date('Y/m/d', strtotime($cdr->calldate));
+		if (Config::get('ordered_monitor') === true)
+		{
+			$file['path'] = date('Y/m/d', strtotime($cdr->calldate));
+		}
+		else
+		{
+			$file['path'] = "";
+		}
 		$file['name'] = str_replace('audio:', '', $cdr->userfield);
 		return $file;
 	}

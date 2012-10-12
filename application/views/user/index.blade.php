@@ -25,7 +25,7 @@
 <table class="table table-bordered table-striped">
   <thead>
   <th>{{ $users->sortlink('username', 'Kullanıcı Adı') }}</th>
-  <th>{{ $users->sortlink('perm', 'İzinli Dahililer') }}</th>
+  <th>{{ $users->sortlink('perm', 'Görebileceği Dahililer') }}</th>
   <th>Rol</th>
   <th>İşlemler</th>
   </thead>

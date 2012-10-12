@@ -94,8 +94,8 @@
 {{ Form::select('per_page', $per_page_options, Input::get('per_page', 10), array('id' => 'per-page', 'class' => 'input-mini')) }}
  / sayfa
 </div>
-{{ Form::text('total', $cdrs->total, array('id' => 'total', 'class' => 'hide')) }}
-{{ Form::text('page', Input::get('page', 1), array('id' => 'page', 'class' => 'hide')) }}
+{{ Form::hidden('total', $cdrs->total, array('id' => 'total')) }}
+{{ Form::hidden('page', Input::get('page', 1), array('id' => 'page')) }}
 @endif
 
 @endsection

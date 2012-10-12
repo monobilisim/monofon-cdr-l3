@@ -58,7 +58,7 @@ class Home_Controller extends Base_Controller {
 		else
 		{
 			//if (isset($input['redirect'])) $redirect .= '?redirect='.$input['redirect'];
-			return Redirect::to($redirect)
+			return Redirect::to('login')
 				->with_input()
 				->with('message', 'Geçersiz kullanıcı adı ve/veya şifre.')
 				->with('message_status', 'error');

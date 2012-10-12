@@ -42,24 +42,24 @@ return array(
 	"max"            => array(
 		"numeric" => "The :attribute must be less than :max.",
 		"file"    => "The :attribute must be less than :max kilobytes.",
-		"string"  => '<span class="help-inline">Bu alan en fazla :max karakter olabilir.</span>',
+		"string"  => "Bu alan en fazla :max karakter olabilir.",
 	),
 	"mimes"          => "The :attribute must be a file of type: :values.",
 	"min"            => array(
 		"numeric" => "The :attribute must be at least :min.",
 		"file"    => "The :attribute must be at least :min kilobytes.",
-		"string"  => '<span class="help-inline">Bu alan en az :min karakter olabilir.</span>',
+		"string"  => "Bu alan en az :min karakter olabilir."	,
 	),
 	"not_in"         => "The selected :attribute is invalid.",
 	"numeric"        => "The :attribute must be a number.",
-	"required"       => '<span class="help-inline">Bu alan zorunludur.</span>',
+	"required"       => "Bu alan zorunludur.",
 	"same"           => "The :attribute and :other must match.",
 	"size"           => array(
 		"numeric" => "The :attribute must be :size.",
 		"file"    => "The :attribute must be :size kilobyte.",
 		"string"  => "The :attribute must be :size characters.",
 	),
-	"unique"         => '<span class="help-inline">Bu değer daha önce alınmış.</span>',
+	"unique"         => "Bu değer daha önce alınmış.",
 	"url"            => "The :attribute format is invalid.",
 
 	/*

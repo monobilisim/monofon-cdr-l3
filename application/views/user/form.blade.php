@@ -15,15 +15,24 @@
     <div class="controls">
       {{ Form::password('password') }}
       {{ $errors->first('password') }}
-	  <p class="help-block">Değiştirmek istemiyorsanız boş bırakınız.</p>
+	  <p class="help-block">Değiştirmek istemiyorsanız boş bırakın.</p>
     </div>
   </div>
   
   <div class="control-group{{ $errors->first('perm', ' error') }}">
-    <label class="control-label">İzinli Dahili</label>
+    <label class="control-label">Görebileceği Dahililer</label>
     <div class="controls">
       {{ Form::text('perm', $user->perm) }}
       {{ $errors->first('perm') }}
+	  <p class="help-block">
+	    Kural tanımlamaları:
+		<ul>
+	    <li>1XX (1 ile başlayan tüm dahililer)</li>
+		<li>201-205 (201 ile 205 arasındaki tüm dahililer)</li>
+		<li>301,401 (301 ve 401 numaralı dahililer)</li>
+		</ul>
+		Ayrıca kurallar ";" ile birbirine eklenebilir
+	  </p>
     </div>
   </div>
 
