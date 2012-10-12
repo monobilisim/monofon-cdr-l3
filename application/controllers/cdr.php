@@ -175,7 +175,7 @@ class Cdr_Controller extends Base_Controller {
 	public static function retrieve_file($cdr)
 	{
 		$file = array();
-		if (Config::get('ordered_monitor') === true)
+		if (Config::get('application.ordered_monitor') === true)
 		{
 			$file['path'] = date('Y/m/d', strtotime($cdr->calldate));
 		}
