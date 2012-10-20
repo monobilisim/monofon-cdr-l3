@@ -69,10 +69,15 @@ $(document).ready(function() {
 	});
 	
 	$(".btn-listen").click(function() {
-		$("#listen").attr("uniqueid", $(this).attr("uniqueid"));
+		var uniqueid = $(this).parent().children('input[name="uniqueid"]');
+		var calldate = $(this).parent().children('input[name="calldate"]');
+		$("#listen").append(uniqueid);
+		$("#listen").append(calldate);
 	});
 	$("#listen").on('shown', function() {
-		$(".modal-body > p").load("/cdr/listen/" + $(this).attr("uniqueid"));
+		var uniqueid = $(this).children('input[name="uniqueid"]').val();
+		var calldate = $(this).children('input[name="calldate"]').val();
+		$(".modal-body > p").load("/cdr/listen/" + uniqueid + "/" + calldate);
 	});
 	$("#listen").on('hidden', function() {
 		var spinner = '<span class="spinner"></span>';

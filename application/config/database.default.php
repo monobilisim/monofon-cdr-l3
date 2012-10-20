@@ -73,7 +73,7 @@ return array(
 
 		'asterisk' => array(
 			'driver'   => 'mysql',
-			'host'     => '',
+			'host'     => 'localhost',
 			'database' => 'asteriskcdrdb',
 			'username' => 'cdrapp',
 			'password' => '',

@@ -152,16 +152,16 @@ class Cdr_Controller extends Base_Controller {
 		return $where;
 	}
 	
-	public function action_listen($uniqueid)
+	public function action_listen($uniqueid, $calldate)
 	{
-		$html = '<embed src="/wavplayer.swf?gui=full&autoplay=true&h=20&w=300&sound=/cdr/download/' . $uniqueid . '" width="300" height="20" scale="noscale" bgcolor="#dddddd"/>';
+		$html = '<embed src="/wavplayer.swf?gui=full&autoplay=true&h=20&w=300&sound=/cdr/download/' . $uniqueid . '/' . $calldate .'" width="300" height="20" scale="noscale" bgcolor="#dddddd"/>';
 		return $html;
 	}
 	
-	public function action_download($uniqueid)
+	public function action_download($uniqueid, $calldate)
 	{
 		Config::set('database.default', 'asterisk');
-		$cdr = Cdr::find($uniqueid);
+		$cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $calldate))->first();
 		$file = self::retrieve_file($cdr);
 		
 		$headers = array(

@@ -61,8 +61,10 @@
       <td>{{ __("misc.$cdr->disposition") }}</td>
       <td>{{ Cdr::format_billsec($cdr->billsec) }}</td>
       <td>@if ($cdr->userfield)
-        <a class="btn btn-mini btn-listen" data-toggle="modal" uniqueid="{{ $cdr->uniqueid }}" href="#listen">Dinle</a>
-        <a class="btn btn-mini" href="{{ URL::to('cdr/download/'.$cdr->uniqueid) }}">İndir</a>
+        {{ Form::hidden('uniqueid', $cdr->uniqueid) }}
+        {{ Form::hidden('calldate', strtotime($cdr->calldate)) }}
+        <a class="btn btn-mini btn-listen" data-toggle="modal" href="#listen">Dinle</a>
+        <a class="btn btn-mini" href="{{ URL::to('cdr/download/'.$cdr->uniqueid.'/'.strtotime($cdr->calldate)) }}">İndir</a>
         @endif
       </td>
     </tr>
