@@ -11,10 +11,12 @@ class Cdr_Controller extends Base_Controller {
 	public function before()
 	{
 		parent::before();
-		Asset::add('jquery-ui', 'jquery-ui/jquery-ui-1.8.22.custom.min.js');
-		Asset::add('jquery-ui', 'jquery-ui/flick/jquery-ui-1.8.22.custom.css');
+		Asset::add('jquery-ui', 'jquery-ui/jquery-ui-1.9.1.custom.min.js');
+		Asset::add('jquery-ui-tr', 'jquery-ui/jquery.ui.datetimepicker-tr.js');
+		Asset::add('jquery-ui-timepicker', 'jquery-ui/jquery-ui-timepicker-addon.js');
 		Asset::add('cdr', 'js/cdr.js');
-		Asset::add('jquery-ui-tr', 'jquery-ui/jquery.ui.datepicker-tr.js');
+
+		Asset::add('jquery-ui', 'jquery-ui/smoothness/jquery-ui-1.9.1.custom.min.css');
 	}
 	
 	public function action_index()
@@ -28,9 +30,9 @@ class Cdr_Controller extends Base_Controller {
 		);
 		$sort = Input::get('sort', $default_sort['sort']);
 		$dir = Input::get('dir', $default_sort['dir']);
-		
-		$datestart = date('Y-m-d', strtotime(Input::get('datestart', date('Y-m-d'))));
-		$dateend = date('Y-m-d', strtotime(Input::get('dateend', date('Y-m-d'))));
+
+		$datestart = Input::get('datestart') ? self::format_datetime_input(Input::get('datestart')) : date('Y-m-d 00:00');
+		$dateend = Input::get('dateend') ? self::format_datetime_input(Input::get('dateend')) : date('Y-m-d 23:59');
 		$status = Input::get('status');
 		$extension = Input::get('extension');
 		$calldir = Input::get('calldir');
@@ -40,7 +42,7 @@ class Cdr_Controller extends Base_Controller {
 			->left_join('asterisk.ringgroups', 'dst', '=', 'asterisk.ringgroups.grpnum')
 			->left_join('asterisk.users AS users_src', 'src', '=', 'users_src.extension')
 			->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension')
-			->raw_where("DATE(calldate) BETWEEN '$datestart' AND '$dateend'");
+			->raw_where("calldate BETWEEN '$datestart' AND '$dateend'");
 		
 		if ($status) $cdrs->where('disposition', '=', $status);		
 		
@@ -150,6 +152,15 @@ class Cdr_Controller extends Base_Controller {
 		$where = '(' . implode(' OR ', $clauses) . ')';
 		
 		return $where;
+	}
+
+	protected static function format_datetime_input($input)
+	{
+		$datetime_parts = explode(' - ', $input);
+		$date_parts = explode('.', $datetime_parts[0]);
+		$date_parts = array_reverse($date_parts);
+		$datetime_parts[0] = implode('-', $date_parts);
+		return implode(' ', $datetime_parts);
 	}
 	
 	public function action_listen($uniqueid, $calldate)

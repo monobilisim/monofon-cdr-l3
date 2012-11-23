@@ -21,7 +21,7 @@ class Base_Controller extends Controller {
 	{
 		Asset::add('bootstrap_css', 'css/bootstrap.css');
 		Asset::add('style', 'css/style.css');
-		Asset::add('jquery', 'js/jquery-1.7.2.min.js');
+		Asset::add('jquery', 'js/jquery-1.8.3.min.js');
 		Asset::add('bootstrap_js', 'js/bootstrap.min.js');
 	}
 

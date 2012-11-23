@@ -3,8 +3,8 @@
 {{ Form::open(URL::current(), 'GET', array('class' => 'well form-filter clearfix')) }}
 <div class="item">
 <label>Tarih Aralığı</label>
-{{ Form::text('datestart', Input::get('datestart', date('d.m.Y')), array('class' => 'input-small datepicker')) }} 
-{{ Form::text('dateend', Input::get('dateend', date('d.m.Y')), array('class' => 'input-small datepicker')) }}
+{{ Form::text('datestart', Input::get('datestart', date('d.m.Y - 00:00')), array('class' => 'input-date datetimepicker')) }} 
+{{ Form::text('dateend', Input::get('dateend', date('d.m.Y - 23:59')), array('class' => 'input-date datetimepicker')) }}
 </div>
 <div class="item">
 <label>Durum</label>
@@ -14,7 +14,7 @@
 <div style="clear: both"></div>
 
 <div class="item">
-<label>Dahili</label>
+<label>Arayan/Aranan</label>
 {{ Form::text('extension', Input::get('extension'), array('class' => 'input-medium')) }}
 </div>
 <div class="item">

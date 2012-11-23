@@ -5,13 +5,14 @@ $(document).ready(function() {
 	});
 	
 	$(function() {
-		$(".datepicker").datepicker({
-			dateFormat: "dd.mm.yy",
+		$(".datetimepicker").datetimepicker({
+			dateFormat: "dd.mm.yy -",
 			changeMonth: true,
 			changeYear: true,
 			monthNamesShort: ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
 			'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'],
-			yearRange: "c-3:c+0"
+			yearRange: "c-3:c+0",
+			timeText: '',
 		});
 	});
 	
