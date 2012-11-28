@@ -49,14 +49,6 @@ class Cdr extends Eloquent
 				'BUSY'       => __('misc.busy'),
 			);
 		}
-		elseif ($name == 'calldir')
-		{
-			$options = array(
-				'' => '',
-				'in' => 'Gelen',
-				'out' => 'Giden',
-			);
-		}
 		elseif ($name == 'scope')
 		{
 			$calldir = Input::get('calldir');

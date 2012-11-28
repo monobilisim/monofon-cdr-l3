@@ -3,19 +3,51 @@ $(document).ready(function() {
 	$('.pagination a.disabled').click(function(e) {
 		e.preventDefault();
 	});
-	
-	$(function() {
-		$(".datetimepicker").datetimepicker({
-			dateFormat: "dd.mm.yy -",
-			changeMonth: true,
-			changeYear: true,
-			monthNamesShort: ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
-			'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'],
-			yearRange: "c-3:c+0",
-			timeText: '',
-		});
+
+	$(".datetimepicker").datetimepicker({
+		dateFormat: "dd.mm.yy -",
+		changeMonth: true,
+		changeYear: true,
+		monthNamesShort: ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
+		'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'],
+		yearRange: "c-3:c+0",
+		timeText: '',
 	});
-	
+
+	$('.icon-question-sign').bind('mouseenter mouseleave', function() {
+		$(this).next().toggle();
+	});
+
+	var input_src = $('#input_src');
+	var input_dst = $('#input_dst');
+	var input_src_dst = $('#input_src_dst');
+
+	if (input_src.val() || input_dst.val()) {
+		input_src_dst.addClass('grayed-out');
+	}
+	if (input_src_dst.val()) {
+		$([input_src[0], input_dst[0]]).addClass('grayed-out');
+	}
+
+	input_src_dst.keypress(function() {
+		if (!$(this).val()) {
+			$([input_src[0], input_dst[0]]).val("");
+		}
+	});
+	input_src_dst.focus(function() {
+		$(this).removeClass('grayed-out');
+		$([input_src[0], input_dst[0]]).addClass('grayed-out');
+	});
+	$([input_src[0], input_dst[0]]).keypress(function() {
+		if (!$(this).val()) {
+			input_src_dst.val("");
+		}
+	});
+	$([input_src[0], input_dst[0]]).focus(function() {
+		$([input_src[0], input_dst[0]]).removeClass('grayed-out');
+		input_src_dst.addClass('grayed-out');
+	});
+
 	var per_page = $("#per-page").val();
 	
 	$("#per-page").change(function() {

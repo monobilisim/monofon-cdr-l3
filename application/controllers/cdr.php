@@ -31,12 +31,10 @@ class Cdr_Controller extends Base_Controller {
 		$sort = Input::get('sort', $default_sort['sort']);
 		$dir = Input::get('dir', $default_sort['dir']);
 
-		$datestart = Input::get('datestart') ? self::format_datetime_input(Input::get('datestart')) : date('Y-m-d 00:00');
-		$dateend = Input::get('dateend') ? self::format_datetime_input(Input::get('dateend')) : date('Y-m-d 23:59');
-		$status = Input::get('status');
-		$extension = Input::get('extension');
-		$calldir = Input::get('calldir');
-		$scope = Input::get('scope');
+		extract(Input::get());
+
+		$datestart = !empty($datestart) ? self::format_datetime_input($datestart) : date('Y-m-d 00:00');
+		$dateend = !empty($dateend) ? self::format_datetime_input($dateend) : date('Y-m-d 23:59');
 		
 		$cdrs = DB::table('cdr')->select(array('*', 'users_src.name AS src_name', 'users_dst.name AS dst_name'))
 			->left_join('asterisk.ringgroups', 'dst', '=', 'asterisk.ringgroups.grpnum')
@@ -44,43 +42,29 @@ class Cdr_Controller extends Base_Controller {
 			->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension')
 			->raw_where("calldate BETWEEN '$datestart' AND '$dateend'");
 		
-		if ($status) $cdrs->where('disposition', '=', $status);		
+		if (!empty($status)) $cdrs->where('disposition', '=', $status);		
 		
-		$extension_filters = array();
-		if (Auth::user()->perm) $extension_filters['perm'] = Auth::user()->perm;
-		if ($extension) $extension_filters['ext'] = $extension;
+		$number_filters = array();
+		if (Auth::user()->perm) $number_filters['perm'] = Auth::user()->perm;
+		if (!empty($src)) $number_filters['src'] = $src;
+		if (!empty($dst)) $number_filters['dst'] = $dst;
+		if (!empty($src_dst)) $number_filters['src_dst'] = $src_dst;
 		
 		$wheres = array();
 		
-		// Apply extension filter with calldir
-		foreach ($extension_filters as $type => $extension_filter)
+		// Apply number filter
+		foreach ($number_filters as $type => $number_filter)
 		{
-			$wheres[] = self::build_extension_where_clauses($extension_filter, $calldir, $type, $extension);
+			$wheres[] = self::build_number_where_clauses($type, $number_filter);
 		}
 		
 		// Apply scope filter
-		if ($scope)
+		if (!empty($scope))
 		{
-			if ($calldir)
-			{
-				$field = ($calldir == 'in' ? 'src' : 'dst');
-				if ($scope == 'in') $wheres[] = "CHAR_LENGTH($field) != 11";
-				if ($scope == 'out') $wheres[] = "CHAR_LENGTH($field) = 11";	
-			}
-			else
-			{
-				if ($scope == 'in') $wheres[] = "(CHAR_LENGTH(src) != 11 AND CHAR_LENGTH(dst) != 11)";
-				if ($scope == 'out') $wheres[] = "(CHAR_LENGTH(src) = 11 OR CHAR_LENGTH(dst) = 11)";
-			}
+			if ($scope == 'in') $wheres[] = "(CHAR_LENGTH(src) < 7 AND CHAR_LENGTH(dst) < 7)";
+			if ($scope == 'out') $wheres[] = "(CHAR_LENGTH(src) >= 7 OR CHAR_LENGTH(dst) >= 7)";
 		}
-		
-		// No extension or scope filter, only calldir
-		if (empty($extension_filters) AND empty($scope) AND $calldir)
-		{
-			if ($calldir == 'in') $wheres[] = "CHAR_LENGTH(src) = 11";
-			if ($calldir == 'out') $wheres[] = "CHAR_LENGTH(dst) = 11";
-		}
-		
+
 		foreach ($wheres as $where)
 		{
 			$cdrs->raw_where($where);
@@ -103,9 +87,9 @@ class Cdr_Controller extends Base_Controller {
 		));
 	}
 	
-	protected static function build_extension_where_clauses($extension, $calldir, $type, $extension_input)
+	protected static function build_number_where_clauses($type, $number_filter)
 	{
-		$filters = explode(';', $extension);
+		$filters = explode(';', $number_filter);
 		$clauses = array();
 		
 		foreach ($filters as $filter)
@@ -114,7 +98,9 @@ class Cdr_Controller extends Base_Controller {
 			preg_match('/X+/', $filter, $match);
 			if ($match)
 			{
-				$regex = '^' . str_replace($match[0], '[0-9]{'.strlen($match[0]).'}', $filter) . '$';
+				$regex = str_replace($match[0], '[0-9]{'.strlen($match[0]).'}', $filter);
+				if (strlen($filter) >= 7) $regex = '[0-9]*' . $regex;
+				$regex = '^' . $regex . '$';
 				$clauses[] = "REGEXP '$regex'";
 			}
 			elseif (strpos($filter, '-'))
@@ -128,24 +114,24 @@ class Cdr_Controller extends Base_Controller {
 			}
 			else
 			{
-				$clauses[] = "= '$filter'";
+				$clauses[] = strlen($filter) >= 7 ? "LIKE '%$filter'" : "= '$filter'";
 			}
 
 		}
-		
-		// if there is extension filter by a restricted user ignore calldir and treat perm filter as an allowed realm
-		if ($type == 'perm' AND $extension_input) $calldir = false;
-		
+
 		foreach ($clauses as $key => $clause)
 		{
-			if ($calldir)
-			{
-				$field = ($calldir == 'in' ? 'dst' : 'src');
-				$clauses[$key] = $field . ' ' . $clause;
-			}
-			else
+			if ($type == 'perm' OR $type == 'src_dst')
 			{
 				$clauses[$key] = 'src ' . $clause . ' OR ' . 'dst '. $clause;
+			}
+			if ($type == 'src')
+			{
+				$clauses[$key] = 'src ' . $clause;
+			}
+			if ($type == 'dst')
+			{
+				$clauses[$key] = 'dst ' . $clause;
 			}
 		}
 		

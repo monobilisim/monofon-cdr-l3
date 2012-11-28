@@ -2,7 +2,7 @@
 
 {{ Form::open(URL::current(), 'GET', array('class' => 'well form-filter clearfix')) }}
 <div class="item">
-<label>Tarih Aralığı</label>
+<label>Tarih - Saat Aralığı</label>
 {{ Form::text('datestart', Input::get('datestart', date('d.m.Y - 00:00')), array('class' => 'input-date datetimepicker')) }} 
 {{ Form::text('dateend', Input::get('dateend', date('d.m.Y - 23:59')), array('class' => 'input-date datetimepicker')) }}
 </div>
@@ -10,20 +10,36 @@
 <label>Durum</label>
 {{ Form::select('status', Cdr::get_options('status'), Input::get('status'), array('class' => 'input-medium')) }}
 </div>
-
-<div style="clear: both"></div>
-
-<div class="item">
-<label>Arayan/Aranan</label>
-{{ Form::text('extension', Input::get('extension'), array('class' => 'input-medium')) }}
-</div>
-<div class="item">
-<label>Arama Yönü</label>
-{{ Form::select('calldir', Cdr::get_options('calldir'), Input::get('calldir'), array('class' => 'input-small', 'id' => 'calldir-select')) }}
-</div>
 <div class="item">
 <label>Kapsam</label>
-{{ Form::select('scope', Cdr::get_options('scope'), Input::get('scope'), array('class' => 'input-medium', 'id' => 'scope-select')) }}
+{{ Form::select('scope', Cdr::get_options('scope'), Input::get('scope'), array('class' => 'input-medium')) }}
+</div>
+
+<div style="clear: left"></div>
+
+<div class="item">
+<label>Arayan</label>
+{{ Form::text('src', Input::get('src'), array('class' => 'input-small', 'id' => 'input_src')) }}
+</div>
+<div class="item">
+<label>Arayan/Aranan</label>
+{{ Form::text('src_dst', Input::get('src_dst'), array('class' => 'input-small', 'id' => 'input_src_dst')) }}
+</div>
+<div class="item">
+<label>Aranan</label>
+{{ Form::text('dst', Input::get('dst'), array('class' => 'input-small', 'id' => 'input_dst')) }}
+</div>
+<div class="item filter-tips-wrapper">
+<i class="icon-question-sign"></i>
+<div class="filter-tips">
+	Kullanılabilecek arama biçimleri
+	<ul>
+	    <li>1XX (1 ile başlayan tüm dahililer)</li>
+		<li>201-205 (201 ile 205 arasındaki tüm dahililer)</li>
+		<li>301,401 (301 ve 401 numaralı dahililer)</li>
+	</ul>
+	Ayrıca farklı aramalar ";" ile birbirine eklenebilir
+</div>
 </div>
 @if (Input::get('sort'))
 {{ Form::text('sort', Input::get('sort'), array('class' => 'hide')) }}
