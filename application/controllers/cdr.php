@@ -183,5 +183,11 @@ class Cdr_Controller extends Base_Controller {
 		$file['name'] = str_replace('audio:', '', $cdr->userfield);
 		return $file;
 	}
+
+	public static function cdr_file_exists($cdr)
+	{
+		$file = self::retrieve_file($cdr);
+		return file_exists('file:///var/spool/asterisk/monitor/' . $file['path'] . '/' . $file['name'];
+	}
 	
 }

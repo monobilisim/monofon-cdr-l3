@@ -34,7 +34,14 @@ class Home_Controller extends Base_Controller {
 	
 	public function get_index()
 	{
-		return Redirect::to('login');
+		if (Auth::check())
+		{
+			return Redirect::to('cdr');
+		}
+		else
+		{
+			return Redirect::to('login');
+		}
 	}
 
 	public function get_login()
