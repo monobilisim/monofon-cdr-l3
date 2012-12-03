@@ -76,7 +76,7 @@
       <td>{{ Cdr::format_channel($cdr, 'dst') }}</td>
       <td>{{ __("misc.$cdr->disposition") }}</td>
       <td>{{ Cdr::format_billsec($cdr->billsec) }}</td>
-      <td>@if ($cdr->userfield AND Cdr::cdr_file_exists($cdr))
+      <td>@if ($cdr->userfield AND Cdr_Controller::cdr_file_exists($cdr))
         {{ Form::hidden('uniqueid', $cdr->uniqueid) }}
         {{ Form::hidden('calldate', strtotime($cdr->calldate)) }}
         <a class="btn btn-mini btn-listen" data-toggle="modal" href="#listen">Dinle</a>
