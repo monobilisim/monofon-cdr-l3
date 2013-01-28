@@ -104,6 +104,8 @@ $(document).ready(function() {
 	$(".btn-listen").click(function() {
 		var uniqueid = $(this).parent().children('input[name="uniqueid"]');
 		var calldate = $(this).parent().children('input[name="calldate"]');
+		$("#listen").children('input[name="uniqueid"]').remove();
+		$("#listen").children('input[name="calldate"]').remove();
 		$("#listen").append(uniqueid);
 		$("#listen").append(calldate);
 	});
