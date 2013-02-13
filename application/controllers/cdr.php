@@ -162,32 +162,24 @@ class Cdr_Controller extends Base_Controller {
 		$file = self::retrieve_file($cdr);
 		
 		$headers = array(
-			'content-type' => '',
-			'content-disposition' => 'attachment; filename=' . $file['name'],
-			'X-Accel-Redirect' => '/monitor/' . $file['path'] . '/' . $file['name'],
+			'content-type' => 'audio/wav',
+			'content-disposition' => 'attachment; filename=' . $file,
+			'X-Accel-Redirect' => '/monitor/' . $file,
 		);
 		return Response::make(null, 200, $headers);
 	}
 	
 	public static function retrieve_file($cdr)
 	{
-		$file = array();
-		if (Config::get('application.ordered_monitor') === true)
-		{
-			$file['path'] = date('Y/m/d', strtotime($cdr->calldate));
-		}
-		else
-		{
-			$file['path'] = "";
-		}
-		$file['name'] = str_replace('audio:', '', $cdr->userfield);
+		$file = basename(ltrim($cdr->userfield, 'audio:'));
+		if (strpos($file, '.WAV') === false) $file .= '.WAV';
 		return $file;
 	}
 
 	public static function cdr_file_exists($cdr)
 	{
 		$file = self::retrieve_file($cdr);
-		return file_exists('file:///var/spool/asterisk/monitor/' . $file['path'] . '/' . $file['name']);
+		return file_exists('file:///var/spool/asterisk/monitor/' . $file);
 	}
 	
 }

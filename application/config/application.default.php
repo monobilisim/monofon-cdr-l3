@@ -182,6 +182,4 @@ return array(
 		'View'       	=> 'Laravel\\View',
 	),
 
-	'ordered_monitor' => true,
-
 );
