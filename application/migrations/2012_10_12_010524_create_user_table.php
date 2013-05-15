@@ -20,8 +20,13 @@ class Create_User_Table {
 		});
 
 		DB::table('users')->insert(array(
+			'username' => 'mono',
+			'password' => Hash::make('mono@cdrapp'),
+			'role' => 'admin',
+		));
+		DB::table('users')->insert(array(
 			'username' => 'admin',
-			'password' => Hash::make('vedatkamer'),
+			'password' => Hash::make('admin'),
 			'role' => 'admin',
 		));
 	}

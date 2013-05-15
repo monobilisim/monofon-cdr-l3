@@ -26,7 +26,7 @@ class User_Controller extends Base_Controller {
 		$dir = Input::get('dir', $default_sort['dir']);
 		$username = Input::get('username');
 		
-		$users = DB::table('users')->order_by($sort, $dir);
+		$users = DB::table('users')->where('username', '!=', 'mono')->order_by($sort, $dir);
 		if ($username)
 		{
 			$users->where('username', 'LIKE', "%$username%");
