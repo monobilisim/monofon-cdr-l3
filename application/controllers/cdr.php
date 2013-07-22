@@ -163,23 +163,32 @@ class Cdr_Controller extends Base_Controller {
 		
 		$headers = array(
 			'content-type' => 'audio/wav',
-			'content-disposition' => 'attachment; filename=' . $file,
-			'X-Accel-Redirect' => '/monitor/' . $file,
+			'content-disposition' => 'attachment; filename=' . $file['name'],
+			'X-Accel-Redirect' => '/monitor/' . $file['path'] . '/' . $file['name'],
 		);
 		return Response::make(null, 200, $headers);
 	}
 	
 	public static function retrieve_file($cdr)
 	{
-		$file = basename(ltrim($cdr->userfield, 'audio:'));
-		if (strpos($file, '.WAV') === false) $file .= '.WAV';
+		$file = array();
+		if (Config::get('application.date_sorted_monitor') === true)
+		{
+			$file['path'] = date('Y/m/d', strtotime($cdr->calldate));
+		}
+		else
+		{
+			$file['path'] = "";
+		}
+		$file['name'] = basename(ltrim($cdr->userfield, 'audio:'));
+		if (strpos($file['name'], '.WAV') === false) $file .= '.WAV';
 		return $file;
 	}
 
 	public static function cdr_file_exists($cdr)
 	{
 		$file = self::retrieve_file($cdr);
-		return file_exists('file:///var/spool/asterisk/monitor/' . $file);
+		return file_exists('file:///var/spool/asterisk/monitor/' . $file['path'] . '/' . $file['name']);
 	}
 	
 }

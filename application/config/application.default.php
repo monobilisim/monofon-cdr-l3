@@ -182,4 +182,6 @@ return array(
 		'View'       	=> 'Laravel\\View',
 	),
 
+	'date_sorted_monitor'	=> false,
+
 );
