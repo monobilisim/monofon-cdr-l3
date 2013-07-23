@@ -181,7 +181,8 @@ class Cdr_Controller extends Base_Controller {
 			$file['path'] = "";
 		}
 		$file['name'] = basename(ltrim($cdr->userfield, 'audio:'));
-		if (strpos($file['name'], '.WAV') === false) $file .= '.WAV';
+		$ext = Config::get('application.extension');
+		if (strpos($file['name'], ".$ext") === false) $file .= ".$ext";
 		return $file;
 	}
 
