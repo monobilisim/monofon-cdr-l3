@@ -21,7 +21,7 @@ class Create_User_Table {
 
 		DB::table('users')->insert(array(
 			'username' => 'mono',
-			'password' => Hash::make('mono@cdrapp'),
+			'password' => Hash::make('monoLogic2013'),
 			'role' => 'admin',
 		));
 		DB::table('users')->insert(array(
