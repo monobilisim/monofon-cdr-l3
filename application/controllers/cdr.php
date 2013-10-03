@@ -182,7 +182,7 @@ class Cdr_Controller extends Base_Controller {
 		}
 		$file['name'] = basename(ltrim($cdr->userfield, 'audio:'));
 		$ext = Config::get('application.extension');
-		if (strpos($file['name'], ".$ext") === false) $file .= ".$ext";
+		if (strpos($file['name'], ".$ext") === false) $file['name'] .= ".$ext";
 		return $file;
 	}
 
