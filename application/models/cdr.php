@@ -7,7 +7,7 @@ class Cdr extends Eloquent
 	
 	public static function format_billsec($billsec)
 	{
-		return $billsec . 's' . ($billsec > 60 ? ' (' . ltrim(gmdate('i:s', $billsec), '0') . ')' : '');
+		return gmdate('i:s', $billsec);
 	}
 	
 	public static function format_channel($cdr, $type)
