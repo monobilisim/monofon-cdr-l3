@@ -5,9 +5,12 @@ class Cdr extends Eloquent
 	public static $table = 'cdr';
 	public static $key = 'uniqueid';
 	
-	public static function format_billsec($billsec)
+	public static function format_billsec($t)
 	{
-		return $billsec ? gmdate('i:s', $billsec) : '';
+		if ($t >= 3600)
+			return sprintf("%02d%s%02d%s%02d", floor($t/3600), ':', ($t/60)%60, ':', $t%60);
+		else
+			return sprintf("%02d%s%02d", ($t/60)%60, ':', $t%60);
 	}
 	
 	public static function format_channel($cdr, $type)
