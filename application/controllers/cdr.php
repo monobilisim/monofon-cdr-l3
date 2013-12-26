@@ -84,6 +84,7 @@ class Cdr_Controller extends Base_Controller {
 
 		$colspan = 6;
 		if (Config::get('application.dstchannel')) $colspan++;
+		if (Config::get('application.clid')) $colspan++;
 
 		$this->layout->nest('content', 'cdr.index', array(
 			'cdrs' => $cdrs,

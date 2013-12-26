@@ -29,6 +29,12 @@ class Cdr extends Eloquent
 			return $cdr->$type;
 		}
 	}
+
+	public static function format_clid($clid)
+	{
+		preg_match('/"(.+)"/', $clid, $matches);
+		return isset($matches[1]) ? $matches[1] : '';
+	}
 	
 	public static function get_options($name)
 	{

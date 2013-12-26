@@ -68,6 +68,9 @@
 <table class="table table-bordered table-striped cdr-table">
   <thead>
     <th>{{ $cdrs->sortlink('calldate', 'Tarih - Saat') }}</th>
+  @if (Config::get('application.dstchannel'))
+    <th>{{ $cdrs->sortlink('clid', 'Arayan Tanımı') }}</th>
+  @endif
     <th>{{ $cdrs->sortlink('src', 'Arayan') }}</th>
     <th>{{ $cdrs->sortlink('dst', 'Aranan') }}</th>
   @if (Config::get('application.dstchannel'))
@@ -81,6 +84,9 @@
   @foreach ($cdrs->results as $cdr)
     <tr>
       <td>{{ date('d.m.Y', strtotime($cdr->calldate)) . ' - ' . date('H:i:s', strtotime($cdr->calldate)) }}</td>
+    @if (Config::get('application.dstchannel'))
+      <td>{{ Cdr::format_clid($cdr->clid) }}</td>
+    @endif
       <td>{{ Cdr::format_src_dst($cdr, 'src') }}</td>
       <td>{{ Cdr::format_src_dst($cdr, 'dst') }}</td>
     @if (Config::get('application.dstchannel'))

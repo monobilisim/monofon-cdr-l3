@@ -185,5 +185,6 @@ return array(
 	'date_sorted_monitor'	=> false,
 	'extension'		=> 'WAV',
 	'dstchannel'		=> false,
+	'clid'			=> false,
 
 );
