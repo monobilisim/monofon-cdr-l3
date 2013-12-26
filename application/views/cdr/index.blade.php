@@ -29,6 +29,12 @@
 <label>Aranan</label>
 {{ Form::text('dst', Input::get('dst'), array('class' => 'input-small', 'id' => 'input_dst')) }}
 </div>
+@if (Config::get('application.dstchannel'))
+<div class="item">
+<label>Aranan Kanal</label>
+{{ Form::text('dstchannel', Input::get('dstchannel'), array('class' => 'input-small', 'id' => 'input_dstchannel')) }}
+</div>
+@endif
 <div class="item filter-tips-wrapper">
 <i class="icon-question-sign"></i>
 <div class="filter-tips">
@@ -64,6 +70,9 @@
     <th>{{ $cdrs->sortlink('calldate', 'Tarih - Saat') }}</th>
     <th>{{ $cdrs->sortlink('src', 'Arayan') }}</th>
     <th>{{ $cdrs->sortlink('dst', 'Aranan') }}</th>
+  @if (Config::get('application.dstchannel'))
+    <th>{{ $cdrs->sortlink('dstchannel', 'Aranan Kanal') }}</th>
+  @endif
     <th>{{ $cdrs->sortlink('disposition', 'Durum') }}</th>
     <th>{{ $cdrs->sortlink('billsec', 'Süre') }}</th>
     <th style="width: 75px">Ses Kaydı</th>
@@ -72,8 +81,11 @@
   @foreach ($cdrs->results as $cdr)
     <tr>
       <td>{{ date('d.m.Y', strtotime($cdr->calldate)) . ' - ' . date('H:i:s', strtotime($cdr->calldate)) }}</td>
-      <td>{{ Cdr::format_channel($cdr, 'src') }}</td>
-      <td>{{ Cdr::format_channel($cdr, 'dst') }}</td>
+      <td>{{ Cdr::format_src_dst($cdr, 'src') }}</td>
+      <td>{{ Cdr::format_src_dst($cdr, 'dst') }}</td>
+    @if (Config::get('application.dstchannel'))
+      <td>{{ $cdr->dstchannel }}</td>
+    @endif
       <td>{{ __("misc.$cdr->disposition") }}</td>
       <td>{{ Cdr::format_billsec($cdr->billsec) }}</td>
       <td>@if ($cdr->userfield AND Cdr_Controller::cdr_file_exists($cdr))
@@ -86,7 +98,7 @@
     </tr>
   @endforeach
     <tr>
-      <td colspan="6">
+      <td colspan="{{ $colspan }}">
         <strong>Toplam arama sayısı: </strong>{{ $cdrs->total }}
       </td>
     </tr>

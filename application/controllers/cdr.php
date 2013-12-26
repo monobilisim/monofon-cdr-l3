@@ -43,6 +43,7 @@ class Cdr_Controller extends Base_Controller {
 			->raw_where("calldate BETWEEN '$datestart' AND '$dateend'");
 		
 		if (!empty($status)) $cdrs->where('disposition', '=', $status);		
+		if (!empty($dstchannel)) $cdrs->where('dstchannel', 'LIKE', "%$dstchannel%");
 		
 		$number_filters = array();
 		if (Auth::user()->perm) $number_filters['perm'] = Auth::user()->perm;
@@ -81,9 +82,13 @@ class Cdr_Controller extends Base_Controller {
 			100 => 100
 		);
 
+		$colspan = 6;
+		if (Config::get('application.dstchannel')) $colspan++;
+
 		$this->layout->nest('content', 'cdr.index', array(
 			'cdrs' => $cdrs,
 			'per_page_options' => $per_page_options,
+			'colspan' => $colspan,
 		));
 	}
 	

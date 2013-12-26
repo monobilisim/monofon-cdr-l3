@@ -13,7 +13,7 @@ class Cdr extends Eloquent
 			return sprintf("%02d%s%02d", ($t/60)%60, ':', $t%60);
 	}
 	
-	public static function format_channel($cdr, $type)
+	public static function format_src_dst($cdr, $type)
 	{
 		$name = $type . '_name';
 		if ($cdr->$name)
