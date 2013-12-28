@@ -184,6 +184,7 @@ return array(
 
 	'date_sorted_monitor'	=> false,
 	'extension'		=> 'WAV',
+	'multiserver'		=> false, // birden çok sunucuyu kapsıyorsa sunucu sayısını yaz
 	'dstchannel'		=> false,
 	'clid'			=> false,
 

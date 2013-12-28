@@ -14,6 +14,12 @@
 <label>Kapsam</label>
 {{ Form::select('scope', Cdr::get_options('scope'), Input::get('scope'), array('class' => 'input-medium')) }}
 </div>
+@if (Config::get('application.multiserver'))
+<div class="item">
+<label>Sunucu</label>
+{{ Form::select('server', Cdr::get_options('server'), Input::get('server'), array('class' => 'input-mini')) }}
+</div>
+@endif
 
 <div style="clear: left"></div>
 
@@ -78,6 +84,9 @@
   @endif
     <th>{{ $cdrs->sortlink('disposition', 'Durum') }}</th>
     <th>{{ $cdrs->sortlink('billsec', 'Süre') }}</th>
+  @if (Config::get('application.multiserver'))
+    <th>{{ $cdrs->sortlink('server', 'Sunucu') }}</th>
+  @endif
     <th style="width: 75px">Ses Kaydı</th>
   </thead>
   <tbody>
@@ -96,6 +105,9 @@
     @endif
       <td>{{ __("misc.$cdr->disposition") }}</td>
       <td>{{ Cdr::format_billsec($cdr->billsec) }}</td>
+    @if (Config::get('application.multiserver'))
+      <td>{{ $cdr->server }}</td>
+    @endif
       <td>@if ($cdr->userfield AND Cdr_Controller::cdr_file_exists($cdr))
         {{ Form::hidden('uniqueid', $cdr->uniqueid) }}
         {{ Form::hidden('calldate', strtotime($cdr->calldate)) }}

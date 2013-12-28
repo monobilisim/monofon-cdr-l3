@@ -15,6 +15,8 @@ class Cdr extends Eloquent
 	
 	public static function format_src_dst($cdr, $type)
 	{
+		if (Config::get('application.multiserver')) return $cdr->$type;
+
 		$name = $type . '_name';
 		if ($cdr->$name)
 		{
@@ -40,9 +42,7 @@ class Cdr extends Eloquent
 	{
 		if ($name == 'ringgroup')
 		{
-			$options = array(
-				'' => ''
-			);
+			$options = array('' => '');
 			$ringgroups = DB::table('asterisk.ringgroups')->get();
 			foreach ($ringgroups as $rg) {
 				$options[$rg->grpnum] = $rg->grpnum . ' / ' . $rg->description;
@@ -78,6 +78,14 @@ class Cdr extends Eloquent
 				'in' => 'Dahili Aramalar',
 				'out' => 'Dış Aramalar',
 			);
+		}
+		elseif ($name == 'server')
+		{
+			$options = array('' => '');
+			for ($i = 1; $i <= Config::get('application.multiserver'); $i++)
+			{
+				$options["cc$i"] = "cc$i";
+			}
 		}
 		return $options;
 	}

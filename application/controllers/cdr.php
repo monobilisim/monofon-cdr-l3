@@ -36,13 +36,22 @@ class Cdr_Controller extends Base_Controller {
 		$datestart = !empty($datestart) ? self::format_datetime_input($datestart) : date('Y-m-d 00:00');
 		$dateend = !empty($dateend) ? self::format_datetime_input($dateend) : date('Y-m-d 23:59');
 		
-		$cdrs = DB::table('cdr')->select(array('*', 'users_src.name AS src_name', 'users_dst.name AS dst_name'))
-			->left_join('asterisk.ringgroups', 'dst', '=', 'asterisk.ringgroups.grpnum')
-			->left_join('asterisk.users AS users_src', 'src', '=', 'users_src.extension')
-			->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension')
-			->raw_where("calldate BETWEEN '$datestart' AND '$dateend'");
+		if (Config::get('application.multiserver'))
+		{
+			$cdrs = DB::table('cdr')->select('*')
+				->raw_where("calldate BETWEEN '$datestart' AND '$dateend'");
+		}
+		else
+		{
+			$cdrs = DB::table('cdr')->select(array('*', 'users_src.name AS src_name', 'users_dst.name AS dst_name'))
+				->left_join('asterisk.ringgroups', 'dst', '=', 'asterisk.ringgroups.grpnum')
+				->left_join('asterisk.users AS users_src', 'src', '=', 'users_src.extension')
+				->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension')
+				->raw_where("calldate BETWEEN '$datestart' AND '$dateend'");
+		}
 		
 		if (!empty($status)) $cdrs->where('disposition', '=', $status);		
+		if (!empty($server)) $cdrs->where('server', '=', $server);
 		if (!empty($dstchannel)) $cdrs->where('dstchannel', 'LIKE', "%$dstchannel%");
 		
 		$number_filters = array();
@@ -83,6 +92,7 @@ class Cdr_Controller extends Base_Controller {
 		);
 
 		$colspan = 6;
+		if (Config::get('application.multiserver')) $colspan++;
 		if (Config::get('application.dstchannel')) $colspan++;
 		if (Config::get('application.clid')) $colspan++;
 
