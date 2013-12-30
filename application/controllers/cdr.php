@@ -49,6 +49,8 @@ class Cdr_Controller extends Base_Controller {
 				->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension')
 				->raw_where("calldate BETWEEN '$datestart' AND '$dateend'");
 		}
+
+		if (!Auth::user()->allrows) $cdrs->where('userfield', '!=', '');
 		
 		if (!empty($status)) $cdrs->where('disposition', '=', $status);		
 		if (!empty($server)) $cdrs->where('server', '=', $server);

@@ -36,16 +36,11 @@
       <td>{{ $user->perm }}</td>
       <td>{{ $roles[$user->role] }}</td>
       <td>
-		<a class="btn" href="/user/update/{{ $user->id }}">
-		  <i class="icon-edit icon-black"></i>
-		  Güncelle
-		</a>
-        @if (Auth::user()->id !== $user->id)
-		<a data-toggle="modal" class="btn" href="#delete_{{ $user->id }}">
-		  <i class="icon-trash icon-black"></i>
-		  Sil
-		</a>
-		@endif
+        <a href="/user/update/{{ $user->id }}">Güncelle</a>
+	@if (Auth::user()->id !== $user->id)
+	|
+        <a data-toggle="modal" href="#delete_{{ $user->id }}">Sil</a>
+	@endif
         {{ View::make('delete', array('id' => $user->id, 'identifier' => 'Kullanıcı [' . $user->username . ']', 'delete_link' => '/user/delete/' . $user->id)) }}
       </td>
     </tr>

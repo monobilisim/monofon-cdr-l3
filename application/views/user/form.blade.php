@@ -37,6 +37,14 @@
   </div>
 
   <div class="control-group">
+    <div class="controls checkbox">
+    <label>
+      {{ Form::checkbox('allrows', '1', $user->allrows) }} Ses kaydı olmayan satırları da görsün
+    </label>
+    </div>
+  </div>
+  
+  <div class="control-group">
     <label class="control-label">Rol</label>
     <div class="controls">
       {{ Form::select('role', $roles, $user->role) }}
