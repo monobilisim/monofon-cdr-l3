@@ -105,6 +105,17 @@ class Cdr_Controller extends Base_Controller {
 		));
 	}
 	
+	public function action_view($uniqueid, $timestamp)
+	{
+		Config::set('database.default', 'asterisk');
+
+		$cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $timestamp))->first();
+
+		$this->layout->nest('content', 'cdr.view', array(
+			'cdr' => $cdr
+		));
+	}
+	
 	protected static function build_number_where_clauses($type, $number_filter)
 	{
 		$filters = explode(';', $number_filter);

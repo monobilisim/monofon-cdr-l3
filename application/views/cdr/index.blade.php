@@ -92,7 +92,7 @@
   <tbody>
   @foreach ($cdrs->results as $cdr)
     <tr>
-      <td>{{ date('d.m.Y', strtotime($cdr->calldate)) . ' - ' . date('H:i:s', strtotime($cdr->calldate)) }}</td>
+      <td><a class="cdr-link" href="{{ URL::to('cdr/view/'.$cdr->uniqueid.'/'.strtotime($cdr->calldate)) }}">{{ date('d.m.Y', strtotime($cdr->calldate)) . ' - ' . date('H:i:s', strtotime($cdr->calldate)) }}</a></td>
     @if (Config::get('application.clid'))
       <td>{{ Cdr::format_clid($cdr->clid) }}</td>
       <td>{{ $cdr->src }}</td>

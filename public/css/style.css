@@ -84,6 +84,10 @@ h3 {
 	height: 32px;
 }	
 
+a.cdr-link {
+	color: #333;
+}
+
 .spinner {
 	display: block;
 	width: 32px;
