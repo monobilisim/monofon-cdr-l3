@@ -45,6 +45,14 @@
   </div>
   
   <div class="control-group">
+    <div class="controls checkbox">
+    <label>
+      {{ Form::checkbox('buttons', '1', $user->buttons) }} Dinle/İndir butonlarını görsün
+    </label>
+    </div>
+  </div>
+
+  <div class="control-group">
     <label class="control-label">Rol</label>
     <div class="controls">
       {{ Form::select('role', $roles, $user->role) }}

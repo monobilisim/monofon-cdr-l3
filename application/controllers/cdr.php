@@ -55,6 +55,7 @@ class Cdr_Controller extends Base_Controller {
 		if (!empty($status)) $cdrs->where('disposition', '=', $status);		
 		if (!empty($server)) $cdrs->where('server', '=', $server);
 		if (!empty($dstchannel)) $cdrs->where('dstchannel', 'LIKE', "%$dstchannel%");
+		if (!empty($accountcode)) $cdrs->where('accountcode', 'LIKE', "%$accountcode%");
 		
 		$number_filters = array();
 		if (Auth::user()->perm) $number_filters['perm'] = Auth::user()->perm;
@@ -97,11 +98,16 @@ class Cdr_Controller extends Base_Controller {
 		if (Config::get('application.multiserver')) $colspan++;
 		if (Config::get('application.dstchannel')) $colspan++;
 		if (Config::get('application.clid')) $colspan++;
+		if (Config::get('application.accountcode')) $colspan++;
+
+		$buttons = Auth::user()->buttons;
+		if (!$buttons) $colspan--;
 
 		$this->layout->nest('content', 'cdr.index', array(
 			'cdrs' => $cdrs,
 			'per_page_options' => $per_page_options,
 			'colspan' => $colspan,
+			'buttons' => $buttons,
 		));
 	}
 	

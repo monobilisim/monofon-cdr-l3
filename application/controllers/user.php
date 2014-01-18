@@ -90,6 +90,8 @@ class User_Controller extends Base_Controller {
 	public function post_update($id)
 	{
 		$input = Input::all();
+		if (!isset($input['allrows'])) $input['allrows'] = 0;
+		if (!isset($input['buttons'])) $input['buttons'] = 0;
 		$rules = User::rules();
 		$rules['username'] .= ",username,$id";
 		unset($rules['password']);

@@ -187,5 +187,6 @@ return array(
 	'multiserver'		=> false, // birden çok sunucuyu kapsıyorsa sunucu sayısını yaz
 	'dstchannel'		=> false,
 	'clid'			=> false,
+	'accountcode'		=> false,
 
 );

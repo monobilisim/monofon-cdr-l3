@@ -14,6 +14,12 @@
 <label>Kapsam</label>
 {{ Form::select('scope', Cdr::get_options('scope'), Input::get('scope'), array('class' => 'input-medium')) }}
 </div>
+@if (Config::get('application.accountcode'))
+<div class="item">
+<label>Hesap Kodu</label>
+{{ Form::text('accountcode', Input::get('accountcode'), array('class' => 'input-small')) }}
+</div>
+@endif
 @if (Config::get('application.multiserver'))
 <div class="item">
 <label>Sunucu</label>
@@ -38,7 +44,7 @@
 @if (Config::get('application.dstchannel'))
 <div class="item">
 <label>Aranan Kanal</label>
-{{ Form::text('dstchannel', Input::get('dstchannel'), array('class' => 'input-small', 'id' => 'input_dstchannel')) }}
+{{ Form::text('dstchannel', Input::get('dstchannel'), array('class' => 'input-small')) }}
 </div>
 @endif
 <div class="item filter-tips-wrapper">
@@ -82,12 +88,17 @@
   @if (Config::get('application.dstchannel'))
     <th>{{ $cdrs->sortlink('dstchannel', 'Aranan Kanal') }}</th>
   @endif
+  @if (Config::get('application.accountcode'))
+    <th>{{ $cdrs->sortlink('server', 'Hesap Kodu') }}</th>
+  @endif
     <th>{{ $cdrs->sortlink('disposition', 'Durum') }}</th>
     <th>{{ $cdrs->sortlink('billsec', 'Süre') }}</th>
   @if (Config::get('application.multiserver'))
     <th>{{ $cdrs->sortlink('server', 'Sunucu') }}</th>
   @endif
+  @if ($buttons)
     <th style="width: 75px">Ses Kaydı</th>
+  @endif
   </thead>
   <tbody>
   @foreach ($cdrs->results as $cdr)
@@ -103,11 +114,15 @@
     @if (Config::get('application.dstchannel'))
       <td>{{ $cdr->dstchannel }}</td>
     @endif
+    @if (Config::get('application.accountcode'))
+      <td>{{ $cdr->accountcode }}</td>
+    @endif
       <td>{{ __("misc.$cdr->disposition") }}</td>
       <td>{{ Cdr::format_billsec($cdr->billsec) }}</td>
     @if (Config::get('application.multiserver'))
       <td>{{ $cdr->server }}</td>
     @endif
+    @if ($buttons)
       <td>@if ($cdr->userfield AND Cdr_Controller::cdr_file_exists($cdr))
         {{ Form::hidden('uniqueid', $cdr->uniqueid) }}
         {{ Form::hidden('calldate', strtotime($cdr->calldate)) }}
@@ -116,6 +131,7 @@
         @endif
       </td>
     </tr>
+    @endif
   @endforeach
     <tr>
       <td colspan="{{ $colspan }}">

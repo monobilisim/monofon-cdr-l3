@@ -1,6 +1,6 @@
 <?php
 
-class User_Option {
+class User_Option_Buttons {
 
 	/**
 	 * Make changes to the database.
@@ -11,7 +11,7 @@ class User_Option {
 	{
 		Schema::table('users', function($table)
 		{
-			$table->boolean('allrows')->default(0);
+			$table->boolean('buttons')->default(1);
 		});
 	}
 
@@ -24,7 +24,7 @@ class User_Option {
 	{
 		Schema::table('users', function($table)
 		{
-			$table->drop_column('allrows');
+			$table->drop_column('buttons');
 		});
 	}
 
