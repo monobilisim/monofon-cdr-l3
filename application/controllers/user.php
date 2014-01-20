@@ -42,8 +42,10 @@ class User_Controller extends Base_Controller {
 	
 	public function get_create()
 	{
-		$user = new User(Input::old());
-			
+		$user = new User();
+		$user->fill(Input::old());
+		if (!Input::old()) $user->buttons = 1;
+
 		$this->layout->title = 'Kullanıcı Kaydı Oluştur';
 		$this->layout->nest('content', 'user.form', array(
 			'user' => $user,
@@ -90,8 +92,6 @@ class User_Controller extends Base_Controller {
 	public function post_update($id)
 	{
 		$input = Input::all();
-		if (!isset($input['allrows'])) $input['allrows'] = 0;
-		if (!isset($input['buttons'])) $input['buttons'] = 0;
 		$rules = User::rules();
 		$rules['username'] .= ",username,$id";
 		unset($rules['password']);

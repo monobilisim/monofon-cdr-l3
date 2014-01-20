@@ -135,7 +135,8 @@
   @endforeach
     <tr>
       <td colspan="{{ $colspan }}">
-        <strong>Toplam arama sayısı: </strong>{{ $cdrs->total }}
+        <strong>Toplam arama sayısı: </strong>{{ $cdrs->total }}<br>
+        <strong>Toplam arama süresi: </strong>{{ Cdr::format_billsec($total_billsec) }}
       </td>
     </tr>
   </tbody>

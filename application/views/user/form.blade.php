@@ -6,7 +6,7 @@
     <label class="control-label">Kullanıcı Adı</label>
     <div class="controls">
       {{ Form::text('username', $user->username) }}
-      {{ $errors->first('username') }}
+      <p class="help-inline">{{ $errors->first('username') }}</p>
     </div>
   </div>
 
@@ -14,7 +14,7 @@
     <label class="control-label">Şifre</label>
     <div class="controls">
       {{ Form::password('password') }}
-      {{ $errors->first('password') }}
+      <p class="help-inline">{{ $errors->first('password') }}</p>
 	  <p class="help-block">Değiştirmek istemiyorsanız boş bırakın.</p>
     </div>
   </div>
@@ -23,7 +23,7 @@
     <label class="control-label">Görebileceği Dahililer</label>
     <div class="controls">
       {{ Form::text('perm', $user->perm) }}
-      {{ $errors->first('perm') }}
+      <p class="help-inline">{{ $errors->first('perm') }}</p>
 	  <p class="help-block">
 	    Kural tanımlamaları:
 		<ul>
@@ -39,6 +39,7 @@
   <div class="control-group">
     <div class="controls checkbox">
     <label>
+      {{ Form::hidden('allrows', '0') }}
       {{ Form::checkbox('allrows', '1', $user->allrows) }} Ses kaydı olmayan satırları da görsün
     </label>
     </div>
@@ -47,6 +48,7 @@
   <div class="control-group">
     <div class="controls checkbox">
     <label>
+      {{ Form::hidden('buttons', '0') }}
       {{ Form::checkbox('buttons', '1', $user->buttons) }} Dinle/İndir butonlarını görsün
     </label>
     </div>

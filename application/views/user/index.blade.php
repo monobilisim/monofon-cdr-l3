@@ -1,23 +1,7 @@
 @section('content')
 
 <h3>{{ $title }}</h3>
-
-<div class="row">
-{{ Form::open(URL::current(), 'GET', array('id' => 'user_filter', 'class' => 'well span5 clearfix')) }}
-  <div class="span3">
-    <label><strong>Kullanıcı adı</strong></label>
-    {{ Form::text('username', Input::get('username')) }}
-  </div>
-  <div class="span1">
-    {{ Form::submit('Filtrele', array('class' => 'btn', 'style' => 'margin-top: 23px')) }}
-  </div>
-{{ Form::close() }}
-
-<p class="pull-right">
-  <a class="btn btn-primary" href="/user/create">Kullanıcı Ekle</a>
-</p>
-
-</div>
+<p><a href="/user/create">Yeni Kullanıcı Ekle</a></p>
 
 @if (empty($users->results))
   <div class="alert alert-error">Kullanıcı kaydı bulunamadı.</div>

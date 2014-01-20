@@ -94,6 +94,12 @@ class Cdr_Controller extends Base_Controller {
 			100 => 100
 		);
 
+		$total_billsec = 0;
+		foreach ($cdrs->results as $cdr)
+		{
+			$total_billsec += $cdr->billsec;
+		}
+
 		$colspan = 6;
 		if (Config::get('application.multiserver')) $colspan++;
 		if (Config::get('application.dstchannel')) $colspan++;
@@ -106,6 +112,7 @@ class Cdr_Controller extends Base_Controller {
 		$this->layout->nest('content', 'cdr.index', array(
 			'cdrs' => $cdrs,
 			'per_page_options' => $per_page_options,
+			'total_billsec' => $total_billsec,
 			'colspan' => $colspan,
 			'buttons' => $buttons,
 		));
