@@ -22,6 +22,8 @@ class Cdr_Controller extends Base_Controller {
 	public function action_index()
 	{
 		Config::set('database.default', 'asterisk');
+
+		$filefield = Config::get('application.filefield');
 		
 		$per_page = Input::get('per_page', 10);
 		$default_sort = array(
@@ -50,7 +52,7 @@ class Cdr_Controller extends Base_Controller {
 				->raw_where("calldate BETWEEN '$datestart' AND '$dateend'");
 		}
 
-		if (!Auth::user()->allrows) $cdrs->where('userfield', '!=', '');
+		if (!Auth::user()->allrows) $cdrs->where($filefield, '!=', '');
 		
 		if (!empty($status)) $cdrs->where('disposition', '=', $status);		
 		if (!empty($server)) $cdrs->where('server', '=', $server);
@@ -111,6 +113,7 @@ class Cdr_Controller extends Base_Controller {
 
 		$this->layout->nest('content', 'cdr.index', array(
 			'cdrs' => $cdrs,
+			'filefield' => $filefield,
 			'per_page_options' => $per_page_options,
 			'total_billsec' => $total_billsec,
 			'colspan' => $colspan,
@@ -213,6 +216,8 @@ class Cdr_Controller extends Base_Controller {
 	
 	public static function retrieve_file($cdr)
 	{
+		$filefield = Config::get('application.filefield');
+
 		$file = array();
 		if (Config::get('application.date_sorted_monitor') === true)
 		{
@@ -222,7 +227,7 @@ class Cdr_Controller extends Base_Controller {
 		{
 			$file['path'] = "";
 		}
-		$file['name'] = basename(ltrim($cdr->userfield, 'audio:'));
+		$file['name'] = basename(preg_replace('/^audio:/', '', $cdr->$filefield));
 		$ext = Config::get('application.extension');
 		if (strpos($file['name'], ".$ext") === false) $file['name'] .= ".$ext";
 		return $file;

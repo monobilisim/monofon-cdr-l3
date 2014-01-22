@@ -38,8 +38,8 @@
 
   <div class="control-group">
     <div class="controls checkbox">
+    {{ Form::hidden('allrows', '0') }}
     <label>
-      {{ Form::hidden('allrows', '0') }}
       {{ Form::checkbox('allrows', '1', $user->allrows) }} Ses kaydı olmayan satırları da görsün
     </label>
     </div>
@@ -47,8 +47,8 @@
   
   <div class="control-group">
     <div class="controls checkbox">
+    {{ Form::hidden('buttons', '0') }}
     <label>
-      {{ Form::hidden('buttons', '0') }}
       {{ Form::checkbox('buttons', '1', $user->buttons) }} Dinle/İndir butonlarını görsün
     </label>
     </div>
