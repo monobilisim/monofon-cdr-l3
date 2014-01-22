@@ -45,7 +45,11 @@ class Cdr_Controller extends Base_Controller {
 		}
 		else
 		{
-			$cdrs = DB::table('cdr')->select(array('*', 'users_src.name AS src_name', 'users_dst.name AS dst_name'))
+			$cdrs = DB::table('cdr')->select(array(
+					'*',
+					'users_src.name AS src_name',
+					'users_dst.name AS dst_name'
+				))
 				->left_join('asterisk.ringgroups', 'dst', '=', 'asterisk.ringgroups.grpnum')
 				->left_join('asterisk.users AS users_src', 'src', '=', 'users_src.extension')
 				->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension')
@@ -84,6 +88,9 @@ class Cdr_Controller extends Base_Controller {
 		{
 			$cdrs->raw_where($where);
 		}
+
+		$total_billsec = $cdrs->sum('billsec');
+
 		$cdrs->order_by($sort, $dir);
 		$cdrs = $cdrs->paginate($per_page);
 		
@@ -95,12 +102,6 @@ class Cdr_Controller extends Base_Controller {
 			50 => 50,
 			100 => 100
 		);
-
-		$total_billsec = 0;
-		foreach ($cdrs->results as $cdr)
-		{
-			$total_billsec += $cdr->billsec;
-		}
 
 		$colspan = 6;
 		if (Config::get('application.multiserver')) $colspan++;
@@ -205,13 +206,8 @@ class Cdr_Controller extends Base_Controller {
 		Config::set('database.default', 'asterisk');
 		$cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $calldate))->first();
 		$file = self::retrieve_file($cdr);
-		
-		$headers = array(
-			'content-type' => 'audio/wav',
-			'content-disposition' => 'attachment; filename=' . $file['name'],
-			'X-Accel-Redirect' => '/monitor/' . $file['path'] . '/' . $file['name'],
-		);
-		return Response::make(null, 200, $headers);
+
+		return Response::download('/var/spool/asterisk/monitor/' . $file['path'] . '/' . $file['name'], $file['name']);
 	}
 	
 	public static function retrieve_file($cdr)
