@@ -160,7 +160,7 @@ class Cdr_Controller extends Base_Controller {
 			}
 			else
 			{
-				$clauses[] = strlen($filter) >= 7 ? "LIKE '%$filter'" : "= '$filter'";
+				$clauses[] = strlen($filter) >= 7 ? "LIKE '%$filter%'" : "= '$filter'";
 			}
 
 		}
