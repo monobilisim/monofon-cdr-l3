@@ -106,16 +106,14 @@ $(document).ready(function() {
 	});
 	
 	$(".btn-listen").click(function() {
-		var uniqueid = $(this).parent().children('input[name="uniqueid"]');
-		var calldate = $(this).parent().children('input[name="calldate"]');
-		$("#listen").children('input[name="uniqueid"]').remove();
-		$("#listen").children('input[name="calldate"]').remove();
-		$("#listen").append(uniqueid);
-		$("#listen").append(calldate);
+		var uniqueid = $(this).parent().children('input[name="uniqueid"]').val();
+		var calldate = $(this).parent().children('input[name="calldate"]').val();
+		$("#listen").data("uniqueid", uniqueid);
+		$("#listen").data("calldate", calldate);
 	});
 	$("#listen").on('shown', function() {
-		var uniqueid = $(this).children('input[name="uniqueid"]').val();
-		var calldate = $(this).children('input[name="calldate"]').val();
+		var uniqueid = $(this).data("uniqueid");
+		var calldate = $(this).data("calldate");
 		$(".modal-body > p").load("/cdr/listen/" + uniqueid + "/" + calldate);
 	});
 	$("#listen").on('hidden', function() {
