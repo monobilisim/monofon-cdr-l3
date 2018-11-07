@@ -169,11 +169,11 @@ class Cdr_Controller extends Base_Controller {
 		{
 			if ($type == 'perm' OR $type == 'src_dst')
 			{
-				$clauses[$key] = 'src ' . $clause . ' OR ' . 'dst '. $clause;
+				$clauses[$key] = 'src ' . $clause . ' OR ' . 'dst ' . $clause . ' OR ' . 'cnum ' . $clause;
 			}
 			if ($type == 'src')
 			{
-				$clauses[$key] = 'src ' . $clause;
+				$clauses[$key] = 'src ' . $clause . ' OR ' . 'cnum ' . $clause;
 			}
 			if ($type == 'dst')
 			{
