@@ -209,6 +209,7 @@ class Cdr_Controller extends Base_Controller {
             $html .= '<embed src="/wavplayer.swf?gui=full&autoplay=true&h=20&w=300&sound=/cdr/download/' . $uniqueid . '/' . $calldate . '" width="300" height="20" scale="noscale" bgcolor="#dddddd"/>';
         } elseif ($file_info['extension'] === 'ogg') {
             $html = <<<HTML
+                <div id="waveform-progress" class="progress progress-striped active"><div class="bar" style="width: 0;"></div></div>
                 <div id="waveform"></div>
                 
                 <div class="controls">
@@ -240,10 +241,19 @@ class Cdr_Controller extends Base_Controller {
                             })
                         ]
                     });
+                    
+                    $('#waveform-progress').show();
+                    $('#waveform').css({'height': 0, 'overflow': 'hidden'});
         
                     wavesurfer.load('/cdr/download/$uniqueid/$calldate');
+                    
+                    wavesurfer.on('loading', function (percentage) {
+                        $('#waveform-progress .bar').css('width', percentage.toString() + '%');
+                    });
         
                     wavesurfer.on('ready', function () {
+                        $('#waveform-progress').hide();
+                        $('#waveform').css({'height': '', 'overflow': ''});
                         wavesurfer.play();
                     });
         
