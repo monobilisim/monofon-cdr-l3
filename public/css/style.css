@@ -75,14 +75,27 @@ h3 {
 }
 
 #listen {
-	width: 332px;
-	margin-left: -166px;
+	width: 500px;
+	margin-left: -250px;
+}
+
+#listen .modal-body {
+	overflow-x: hidden;
 }
 
 #listen .modal-body p {
 	position: relative;
-	height: 32px;
-}	
+	height: 80px;
+}
+
+#listen .controls {
+	margin-top: 10px;
+	text-align: center;
+}
+
+#waveform {
+	position: relative;
+}
 
 a.cdr-link {
 	color: #333;

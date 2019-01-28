@@ -15,6 +15,8 @@ class Cdr_Controller extends Base_Controller {
 		Asset::add('jquery-ui-tr', 'jquery-ui/jquery.ui.datetimepicker-tr.js');
 		Asset::add('jquery-ui-timepicker', 'jquery-ui/jquery-ui-timepicker-addon.js');
 		Asset::add('cdr', 'js/cdr.js');
+        Asset::add('wavesurfer', 'js/wavesurfer.min.js');
+        Asset::add('wavesurfer-cursor', 'js/wavesurfer.cursor.js');
 
 		Asset::add('jquery-ui', 'jquery-ui/smoothness/jquery-ui-1.9.1.custom.min.css');
 	}
@@ -197,8 +199,107 @@ class Cdr_Controller extends Base_Controller {
 	
 	public function action_listen($uniqueid, $calldate)
 	{
-		$html = '<embed src="/wavplayer.swf?gui=full&autoplay=true&h=20&w=300&sound=/cdr/download/' . $uniqueid . '/' . $calldate .'" width="300" height="20" scale="noscale" bgcolor="#dddddd"/>';
-		return $html;
+        Config::set('database.default', 'asterisk');
+        $cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $calldate))->first();
+        $file = self::retrieve_file($cdr);
+        $file_info = pathinfo($file['name']);
+
+        $html = '';
+        if ($file_info['extension'] === 'WAV') {
+            $html .= '<embed src="/wavplayer.swf?gui=full&autoplay=true&h=20&w=300&sound=/cdr/download/' . $uniqueid . '/' . $calldate . '" width="300" height="20" scale="noscale" bgcolor="#dddddd"/>';
+        } elseif ($file_info['extension'] === 'ogg') {
+            $html = <<<HTML
+                <div id="waveform"></div>
+                
+                <div class="controls">
+                    <button data-toggle="tooltip" data-placement="bottom" title="2 saniye geri" class="btn" data-action="backward"><i class="icon-backward"></i></button>
+                    <button data-toggle="tooltip" data-placement="bottom" title="Oynat/Duraklat" class="btn" data-action="play"><i class="icon-play"></i> / <i class="icon-pause"></i> (<span id="time-current" style="font-family:monospace;">00:00.000</span> / <span id="time-total" style="font-family:monospace;">00:00.000</span>)</button>
+                    <button data-toggle="tooltip" data-placement="bottom" title="2 saniye ileri" class="btn" data-action="forward"><i class="icon-forward"></i></button>
+                </div>
+                  
+                <script>
+                    $('[data-toggle="tooltip"]').tooltip();
+                
+                    var wavesurfer = WaveSurfer.create({
+                        container: '#waveform',
+                        waveColor: '#828282',
+                        progressColor: '#0088CC',
+                        height: 40,
+                        barHeight: 1,
+                        skipLength: 2,
+                        plugins: [
+                            WaveSurfer.cursor.create({
+                                showTime: true,
+                                opacity: 0.7,
+                                customShowTimeStyle: {
+                                    'background-color': '#000',
+                                    color: '#fff',
+                                    padding: '2px',
+                                    'font-size': '10px'
+                                }
+                            })
+                        ]
+                    });
+        
+                    wavesurfer.load('/cdr/download/$uniqueid/$calldate');
+        
+                    wavesurfer.on('ready', function () {
+                        wavesurfer.play();
+                    });
+        
+                    wavesurfer.on('audioprocess', function() {
+                        if(wavesurfer.isPlaying()) {
+                            var totalTime = wavesurfer.getDuration(),
+                            currentTime = wavesurfer.getCurrentTime();
+        
+                            document.getElementById('time-total').innerText = formatDuration(totalTime.toFixed(3));
+                            document.getElementById('time-current').innerText = formatDuration(currentTime.toFixed(3));
+                        }
+                    });
+        
+                    $('.controls .btn').on('click', function(){
+                        var action = $(this).data('action');
+                        switch (action) {
+                            case 'play':
+                                wavesurfer.playPause();
+                                break;
+                            case 'backward':
+                                wavesurfer.skipBackward();
+                                break;
+                            case 'forward':
+                                wavesurfer.skipForward();
+                                break;
+                        }
+                    });
+                    
+                    $("#listen").on('hidden', function() {
+                      wavesurfer.destroy();  
+                    })
+                    
+                    function formatDuration(duration) {
+                        var totalSeconds = parseInt(duration.split('.')[0]);
+                        var minutes = Math.floor(totalSeconds / 60);
+                        var seconds = totalSeconds - minutes * 60;
+                        var miliSeconds = duration.split('.')[1];
+                      
+                        minutes = minutes.toString();
+                        seconds = seconds.toString();
+                        
+                        if (minutes.length === 1) {
+                            minutes = '0' + minutes;
+                        }
+                        if (seconds.length === 1) {
+                            seconds = '0' + seconds;
+                        }
+                    
+                        return minutes + ':' + seconds + '.' + miliSeconds;
+                    }
+                </script>
+HTML;
+
+        }
+
+        return $html;
 	}
 	
 	public function action_download($uniqueid, $calldate)
@@ -225,7 +326,9 @@ class Cdr_Controller extends Base_Controller {
 		}
 		$file['name'] = basename(preg_replace('/^audio:/', '', $cdr->$filefield));
 		$ext = Config::get('application.extension');
-		if (strpos($file['name'], ".$ext") === false) $file['name'] .= ".$ext";
+        if (strpos($file['name'], ".$ext") === false && strpos($file['name'], ".ogg") === false) {
+            $file['name'] .= ".$ext";
+        }
 		return $file;
 	}
 
