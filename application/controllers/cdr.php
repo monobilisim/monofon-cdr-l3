@@ -17,6 +17,7 @@ class Cdr_Controller extends Base_Controller {
 		Asset::add('cdr', 'js/cdr.js');
         Asset::add('wavesurfer', 'js/wavesurfer.min.js');
         Asset::add('wavesurfer-cursor', 'js/wavesurfer.cursor.js');
+        Asset::add('wavesurfer-timeline', 'js/wavesurfer.timeline.js');
 
 		Asset::add('jquery-ui', 'jquery-ui/smoothness/jquery-ui-1.9.1.custom.min.css');
 	}
@@ -213,6 +214,7 @@ class Cdr_Controller extends Base_Controller {
                     <div id="waveform-progress" class="progress progress-striped active"><div class="bar" style="width: 0;"></div></div>
                 </div>
                 <div id="waveform"></div>
+                <div id="wave-timeline"></div>
                 
                 <div class="controls">
                     <button data-toggle="tooltip" data-placement="bottom" title="2 saniye geri" class="btn" data-action="backward"><i class="icon-backward"></i></button>
@@ -227,7 +229,7 @@ class Cdr_Controller extends Base_Controller {
                         container: '#waveform',
                         waveColor: '#828282',
                         progressColor: '#0088CC',
-                        height: 80,
+                        height: 120,
                         barHeight: 1,
                         skipLength: 2,
                         plugins: [
@@ -240,6 +242,9 @@ class Cdr_Controller extends Base_Controller {
                                     padding: '2px',
                                     'font-size': '10px'
                                 }
+                            }),
+                            WaveSurfer.timeline.create({
+                                container: "#wave-timeline"
                             })
                         ]
                     });

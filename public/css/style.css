@@ -75,8 +75,8 @@ h3 {
 }
 
 #listen {
-	width: 750px;
-	margin-left: -375px;
+	width: 800px;
+	margin-left: -400px;
 }
 
 #listen .modal-body {
@@ -85,7 +85,7 @@ h3 {
 
 #listen .modal-body p {
 	position: relative;
-	height: 120px;
+	height: 180px;
 }
 
 #listen .controls {
@@ -98,7 +98,7 @@ h3 {
 }
 
 #waveform-progress-wrapper {
-	padding: 31px 0;
+	padding: 61px 0;
 }
 
 #waveform-progress {
