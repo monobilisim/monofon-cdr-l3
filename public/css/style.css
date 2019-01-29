@@ -97,6 +97,10 @@ h3 {
 	position: relative;
 }
 
+#waveform-progress {
+	margin-bottom: 22px;
+}
+
 a.cdr-link {
 	color: #333;
 }
