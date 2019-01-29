@@ -75,8 +75,8 @@ h3 {
 }
 
 #listen {
-	width: 500px;
-	margin-left: -250px;
+	width: 750px;
+	margin-left: -375px;
 }
 
 #listen .modal-body {
@@ -85,7 +85,7 @@ h3 {
 
 #listen .modal-body p {
 	position: relative;
-	height: 80px;
+	height: 120px;
 }
 
 #listen .controls {
@@ -97,8 +97,16 @@ h3 {
 	position: relative;
 }
 
+#waveform-progress-wrapper {
+	padding: 31px 0;
+}
+
 #waveform-progress {
-	margin-bottom: 22px;
+	margin: 0;
+}
+
+td.buttons {
+	white-space: nowrap;
 }
 
 a.cdr-link {
