@@ -23,8 +23,8 @@ class Blade {
 		'includes',
 		'render_each',
 		'render',
-		'yields',
-		'yield_sections',
+		'_yields',
+		'_yield_sections',
 		'section_start',
 		'section_end',
 	);
@@ -358,30 +358,30 @@ class Blade {
 	}
 
 	/**
-	 * Rewrites Blade @yield statements into Section statements.
+	 * Rewrites Blade @_yield statements into Section statements.
 	 *
-	 * The Blade @yield statement is a shortcut to the Section::yield method.
+	 * The Blade @_yield statement is a shortcut to the Section::_yield method.
 	 *
 	 * @param  string  $value
 	 * @return string
 	 */
-	protected static function compile_yields($value)
+	protected static function compile__yields($value)
 	{
-		$pattern = static::matcher('yield');
+		$pattern = static::matcher('_yield');
 
-		return preg_replace($pattern, '$1<?php echo \\Laravel\\Section::yield$2; ?>', $value);
+		return preg_replace($pattern, '$1<?php echo \\Laravel\\Section::_yield$2; ?>', $value);
 	}
 
 	/**
-	 * Rewrites Blade yield section statements into valid PHP.
+	 * Rewrites Blade _yield section statements into valid PHP.
 	 *
 	 * @return string
 	 */
-	protected static function compile_yield_sections($value)
+	protected static function compile__yield_sections($value)
 	{
-		$replace = '<?php echo \\Laravel\\Section::yield_section(); ?>';
+		$replace = '<?php echo \\Laravel\\Section::_yield_section(); ?>';
 
-		return str_replace('@yield_section', $replace, $value);
+		return str_replace('@_yield_section', $replace, $value);
 	}
 
 	/**
