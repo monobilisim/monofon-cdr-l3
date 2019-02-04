@@ -149,7 +149,7 @@ class Cdr_Controller extends Base_Controller
                 $billsec_before_transfer = self::calculate_billsec_before_transfer($result->uniqueid);
                 $result->billsec_before_transfer = $billsec_before_transfer;
 
-                if ($billsec_before_transfer) {
+                if ($billsec_before_transfer && $billsec_before_transfer > $result->billsec) {
                     $total_billsec_before_transfer += $billsec_before_transfer;
                 }
             }
