@@ -359,18 +359,17 @@ class Cdr_Controller extends Base_Controller
         Config::set('database.default', 'asterisk');
         $cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $calldate))->first();
         $file = self::retrieve_file($cdr);
-        //dd($file);
-        //if(self::cdr_file_exists($cdr)) {
+
         if (file_exists('file:///var/spool/asterisk/monitor/' . $file['path'] . '/' . $file['name'])) {
             return Response::download('/var/spool/asterisk/monitor/' . $file['path'] . '/' . $file['name'],
                 $file['name']);
-        } else {
-            // aws'de filesize() hata verdiği için dosya indirme işlemi için ilkel yöntemi kullanıyoruz
-            $file_url = 'http://10.1.70.113:9000/monitor/' . $file['path'] . '/' . urlencode($file['name']);
+        }
+
+        if ($remote_base_url = Config::get('application.remote_base_url')) {
+            $file_url = $remote_base_url . '/monitor/' . $file['path'] . '/' . urlencode($file['name']);
             header('Content-Transfer-Encoding: Binary');
             header('Content-Disposition: attachment; filename="' . $file['name'] . '"');
             readfile($file_url);
-            return;
         }
     }
 }

@@ -189,5 +189,6 @@ return array(
 	'dstchannel'		=> false,
 	'clid'			=> false,
 	'accountcode'		=> false,
+    //'remote_base_url' => 'http://10.10.10.10:9000', // Ses dosyaları Minio vb. bir yerde tutuluyorsa
 
 );
