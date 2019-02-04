@@ -28,7 +28,7 @@ class Cdr_Controller extends Base_Controller
         }
         $file['name'] = basename(preg_replace('/^audio:/', '', $cdr->$filefield));
         $ext = Config::get('application.extension');
-        if (strpos($file['name'], ".$ext") === false) {
+        if (strpos($file['name'], ".$ext") === false && strpos($file['name'], '.ogg') === false) {
             $file['name'] .= ".$ext";
         }
         return $file;
