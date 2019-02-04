@@ -297,41 +297,53 @@ class Cdr_Controller extends Base_Controller
 
     private static function get_related_uniueids($uniqueid)
     {
-        $cels = DB::table('cel')
+        $pass = DB::table('cel')
             ->select(array('uniqueid', 'linkedid'))
             ->where('uniqueid', '=', $uniqueid)
             ->or_where('linkedid', '=', $uniqueid)
             ->get();
 
-        $last_set = array();
-        foreach ($cels as $cel) {
-            $set = array();
-            $set[] = $cel->uniqueid;
-            $set[] = $cel->linkedid;
-            $set = array_unique($set);
-            sort($set);
+        $last_criteria = array();
+        $next = array();
+        $done = false;
 
-            if ($last_set === $set) {
-                $cels_matching_set = DB::table('cel')
-                    ->select(array('uniqueid', 'linkedid'))
-                    ->where_in('uniqueid', $set)
-                    ->or_where_in('linkedid', $set)
-                    ->get();
-                $ids = array();
-                foreach ($cels_matching_set as $cel_matching_set) {
-                    $ids[] = $cel_matching_set->uniqueid;
-                    $ids[] = $cel_matching_set->linkedid;
-                    $ids = array_unique($ids);
-                    sort($ids);
-                }
-
-                return $ids;
+        while (!$done) {
+            unset($next);
+            $next = array();
+            foreach ($pass as $set) {
+                $next[] = $set->uniqueid;
+                $next[] = $set->linkedid;
             }
+            $next = array_unique($next);
+            sort($next);
 
-            $last_set = $set;
+            if ($next === $last_criteria) {
+                $done = true;
+                continue;
+            }
+            unset($pass);
+
+            $pass = DB::table('cel')
+                ->select(array('uniqueid', 'linkedid'))
+                ->where_in('uniqueid', $next)
+                ->or_where_in('linkedid', $next)
+                ->get();
+
+            $last_criteria = $next;
+            $next = array();
         }
 
-        return array();
+        $ids = array();
+
+        foreach ($pass as $cel) {
+            $ids[] = $cel->uniqueid;
+            $ids[] = $cel->linkedid;
+
+            $ids = array_unique($ids);
+            sort($ids);
+        }
+
+        return $ids;
     }
 
     private static function get_cdrs_by_uniqueids($uniqueids)
