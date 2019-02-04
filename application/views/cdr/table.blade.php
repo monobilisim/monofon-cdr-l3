@@ -49,7 +49,7 @@
                 <td>{{ $cdr->server }}</td>
             @endif
             @if ($buttons)
-                <td>@if ($cdr->$filefield AND Cdr_Controller::cdr_file_exists($cdr))
+                <td class="buttons">@if ($cdr->$filefield AND Cdr_Controller::cdr_file_exists($cdr))
                         {{ Form::hidden('uniqueid', $cdr->uniqueid) }}
                         {{ Form::hidden('calldate', strtotime($cdr->calldate)) }}
                         <a class="btn btn-mini btn-listen" data-toggle="modal" href="#listen">Dinle</a>
