@@ -141,8 +141,10 @@ class Cdr_Controller extends Base_Controller
 
         $cdrs = PaginatorSorter::make($cdrs->results, $cdrs->total, $per_page, $default_sort);
 
-        foreach ($cdrs->results as $result) {
-            $result->billsec_before_transfer = self::calculate_billsec_before_transfer($result->uniqueid);
+        if (Config::get('application.billsec_before_transfer')) {
+            foreach ($cdrs->results as $result) {
+                $result->billsec_before_transfer = self::calculate_billsec_before_transfer($result->uniqueid);
+            }
         }
 
         $per_page_options = array(
