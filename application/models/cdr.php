@@ -12,6 +12,15 @@ class Cdr extends Eloquent
 		else
 			return sprintf("%02d%s%02d", ($t/60)%60, ':', $t%60);
 	}
+
+        public static function format_billsec_before_transfer($t)
+        {
+		if (is_null($t)) {
+			return '';
+		}
+
+		return self::format_billsec($t);
+        }
 	
 	public static function format_src_dst($cdr, $type)
 	{

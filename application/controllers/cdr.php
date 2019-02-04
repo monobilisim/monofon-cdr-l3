@@ -141,7 +141,9 @@ class Cdr_Controller extends Base_Controller
 
         $cdrs = PaginatorSorter::make($cdrs->results, $cdrs->total, $per_page, $default_sort);
 
+        $display_billsec_before_transfer = false;
         if (Config::get('application.billsec_before_transfer')) {
+            $display_billsec_before_transfer = true;
             foreach ($cdrs->results as $result) {
                 $result->billsec_before_transfer = self::calculate_billsec_before_transfer($result->uniqueid);
             }
@@ -180,6 +182,7 @@ class Cdr_Controller extends Base_Controller
             'total_billsec' => $total_billsec,
             'colspan' => $colspan,
             'buttons' => $buttons,
+            'display_billsec_before_transfer' => $display_billsec_before_transfer,
         ));
     }
 
@@ -296,6 +299,7 @@ class Cdr_Controller extends Base_Controller
             'total_billsec' => $total_billsec,
             'colspan' => $colspan,
             'buttons' => $buttons,
+            'display_billsec_before_transfer' => false,
         ));
 
 
@@ -304,11 +308,11 @@ class Cdr_Controller extends Base_Controller
     private static function calculate_billsec_before_transfer($uniqueid)
     {
         $related_uniqueids = self::get_related_uniueids($uniqueid);
-        $related_cdrs = self::get_cdrs_by_uniqueids($related_uniqueids);
+        $related_cdrs = self::get_cdrs_by_uniqueids($related_uniqueids)->get();
 
         $initial_dst = false;
         $billsec_before_transfer = null;
-        foreach ($related_cdrs->results as $cdr) {
+        foreach ($related_cdrs as $cdr) {
             if (preg_match("/SIP\/{$cdr->dst}-.+/", $cdr->dstchannel)) {
                 $initial_dst = $cdr->dst;
                 $billsec_before_transfer = $cdr->billsec;
@@ -318,8 +322,8 @@ class Cdr_Controller extends Base_Controller
 
         $call_transfered = false;
         if ($initial_dst) {
-            foreach ($related_cdrs->results as $cdr) {
-                if ($cdr->src = $initial_dst) {
+            foreach ($related_cdrs as $cdr) {
+                if ($cdr->src === $initial_dst) {
                     $call_transfered = true;
                     break;
                 }
