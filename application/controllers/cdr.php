@@ -141,6 +141,10 @@ class Cdr_Controller extends Base_Controller
 
         $cdrs = PaginatorSorter::make($cdrs->results, $cdrs->total, $per_page, $default_sort);
 
+        foreach ($cdrs->results as $result) {
+            $result->billsec_before_transfer = self::calculate_billsec_before_transfer($result->uniqueid);
+        }
+
         $per_page_options = array(
             10 => 10,
             25 => 25,
@@ -293,6 +297,38 @@ class Cdr_Controller extends Base_Controller
         ));
 
 
+    }
+
+    private static function calculate_billsec_before_transfer($uniqueid)
+    {
+        $related_uniqueids = self::get_related_uniueids($uniqueid);
+        $related_cdrs = self::get_cdrs_by_uniqueids($related_uniqueids);
+
+        $initial_dst = false;
+        $billsec_before_transfer = null;
+        foreach ($related_cdrs->results as $cdr) {
+            if (preg_match("/SIP\/{$cdr->dst}-.+/", $cdr->dstchannel)) {
+                $initial_dst = $cdr->dst;
+                $billsec_before_transfer = $cdr->billsec;
+                break;
+            }
+        }
+
+        $call_transfered = false;
+        if ($initial_dst) {
+            foreach ($related_cdrs->results as $cdr) {
+                if ($cdr->src = $initial_dst) {
+                    $call_transfered = true;
+                    break;
+                }
+            }
+        }
+
+        if ($call_transfered) {
+            return $billsec_before_transfer;
+        }
+
+        return null;
     }
 
     private static function get_related_uniueids($uniqueid)
