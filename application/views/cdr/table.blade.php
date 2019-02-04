@@ -52,6 +52,9 @@
             <td>{{ __("misc.$cdr->disposition") }}</td>
             <td>{{ Cdr::format_billsec($cdr->billsec) }}</td>
             @if ($display_billsec_before_transfer)
+                @if ($cdr->billsec <= $cdr->billsec_before_transfer)
+                    {{ $cdr->billsec_before_transfer = null }}
+                @endif
                 <td>{{ Cdr::format_billsec_before_transfer($cdr->billsec_before_transfer) }}</td>
             @endif
             @if (Config::get('application.multiserver'))
