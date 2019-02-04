@@ -284,7 +284,7 @@ class Cdr_Controller extends Base_Controller
 
         $this->layout->nest('content', 'cdr.view', array(
             'cdr' => $cdr,
-            'related_cdrs' => $related_cdrs,
+            'cdrs' => $related_cdrs,
             'filefield' => $filefield,
             'per_page_options' => $per_page_options,
             'total_billsec' => $total_billsec,
