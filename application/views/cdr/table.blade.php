@@ -1,21 +1,24 @@
 <table class="table table-bordered table-striped cdr-table">
     <thead>
-    <th>Tarih - Saat</th>
-    @if (Config::get('application.clid'))
-        <th>Arayan Tanımı</th>
+    <th>{{ $cdrs->sortlink('calldate', 'Tarih - Saat') }}</th>
+    @if (Config::get('application.did'))
+        <th>{{ $cdrs->sortlink('did', 'DID') }}</th>
     @endif
-    <th>Arayan</th>
-    <th>Aranan</th>
+    @if (Config::get('application.clid'))
+        <th>{{ $cdrs->sortlink('clid', 'Arayan Tanımı') }}</th>
+    @endif
+    <th>{{ $cdrs->sortlink('src', 'Arayan') }}</th>
+    <th>{{ $cdrs->sortlink('dst', 'Aranan') }}</th>
     @if (Config::get('application.dstchannel'))
-        <th>Aranan Kanal</th>
+        <th>{{ $cdrs->sortlink('dstchannel', 'Aranan Kanal') }}</th>
     @endif
     @if (Config::get('application.accountcode'))
-        <th>Hesap Kodu</th>
+        <th>{{ $cdrs->sortlink('server', 'Hesap Kodu') }}</th>
     @endif
-    <th>Durum</th>
-    <th>Süre</th>
+    <th>{{ $cdrs->sortlink('disposition', 'Durum') }}</th>
+    <th>{{ $cdrs->sortlink('billsec', 'Süre') }}</th>
     @if (Config::get('application.multiserver'))
-        <th>Sunucu</th>
+        <th>{{ $cdrs->sortlink('server', 'Sunucu') }}</th>
     @endif
     @if ($buttons)
         <th style="width: 75px">Ses Kaydı</th>
