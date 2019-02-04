@@ -78,9 +78,6 @@
         <td colspan="{{ $colspan + 1 }}">
             <strong>Toplam arama sayısı: </strong>{{ $cdrs->total }}<br>
             <strong>Toplam arama süresi: </strong>{{ Cdr::format_billsec($total_billsec) }}
-            @if ($display_billsec_before_transfer)
-                <br><strong>Toplam transfere öncesi çağrı süresi: </strong>{{ Cdr::format_billsec($total_billsec_before_transfer) }}
-            @endif
         </td>
     </tr>
 

@@ -142,16 +142,10 @@ class Cdr_Controller extends Base_Controller
         $cdrs = PaginatorSorter::make($cdrs->results, $cdrs->total, $per_page, $default_sort);
 
         $display_billsec_before_transfer = false;
-        $total_billsec_before_transfer = 0;
         if (Config::get('application.billsec_before_transfer')) {
             $display_billsec_before_transfer = true;
             foreach ($cdrs->results as $result) {
-                $billsec_before_transfer = self::calculate_billsec_before_transfer($result->uniqueid);
-                $result->billsec_before_transfer = $billsec_before_transfer;
-
-                if ($billsec_before_transfer && $billsec_before_transfer > $result->billsec) {
-                    $total_billsec_before_transfer += $billsec_before_transfer;
-                }
+                $result->billsec_before_transfer = self::calculate_billsec_before_transfer($result->uniqueid);
             }
         }
 
@@ -189,7 +183,6 @@ class Cdr_Controller extends Base_Controller
             'colspan' => $colspan,
             'buttons' => $buttons,
             'display_billsec_before_transfer' => $display_billsec_before_transfer,
-            'total_billsec_before_transfer' => $total_billsec_before_transfer,
         ));
     }
 
