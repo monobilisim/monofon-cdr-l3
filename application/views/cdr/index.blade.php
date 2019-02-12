@@ -78,7 +78,7 @@
         <div class="alert alert-error">Bu kritere uygun kayıt bulunamadı.</div>
     @else
 
-        @include('cdr.table')
+        @include('cdr.table_records')
 
         {{ $cdrs->links() }}
         <div id="per-page-container">

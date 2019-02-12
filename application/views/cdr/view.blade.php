@@ -35,15 +35,56 @@
         </tr>
     </table>
 
-    @if (empty($cdrs->results))
-        <div class="alert alert-warning">İlişkili çağrı bulunamadı.</div>
-    @else
-
-        <h3>İlişkili çağrı kayıtları</h3>
-
-        @include('cdr.table')
-
-    @endif
+    <div class="accordion" id="details">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion-related-cdrs" href="#related-cdrs">
+                    İlişkili çağrı kayıtları
+                </a>
+            </div>
+            <div id="related-cdrs" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    @if (empty($cdrs->results))
+                        <div class="alert alert-warning">İlişkili çağrı bulunamadı.</div>
+                    @else
+                        @include('cdr.table_records')
+                    @endif
+                </div>
+            </div>
+        </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion-related-cels" href="#related-cels">
+                    İlişkili CEL satırları
+                </a>
+            </div>
+            <div id="related-cels" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    @if (empty($cels))
+                        <div style="margin-top: 20px" class="alert alert-warning">İlişkili CEL satırı bulunamadı.</div>
+                    @else
+                        @include('cdr.table_cels')
+                    @endif
+                </div>
+            </div>
+        </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion-related-queue-logs" href="#related-queue-logs">
+                    İlişkili Queue Log satırları
+                </a>
+            </div>
+            <div id="related-queue-logs" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    @if (empty($queue_logs))
+                        <div style="margin-top: 20px" class="alert alert-warning">İlişkili Queue Log satırı bulunamadı.</div>
+                    @else
+                        @include('cdr.table_queue_logs')
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
 
 @endsection
 

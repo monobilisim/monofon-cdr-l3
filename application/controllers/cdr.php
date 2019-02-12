@@ -255,8 +255,10 @@ class Cdr_Controller extends Base_Controller
         $cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $timestamp))->first();
 
         $related_uniqueids = self::get_related_uniueids($uniqueid);
-        $related_cdrs = self::get_cdrs_by_uniqueids($related_uniqueids);
 
+        $related_cdrs = self::get_cdrs_by_uniqueids($related_uniqueids);
+        $related_cels = self::get_cels_by_uniqueids($related_uniqueids)->get();
+        $related_queue_logs = self::get_queue_logs_by_uniqueids($related_uniqueids)->get();
 
         $total_billsec = $related_cdrs->sum('billsec');
 
@@ -294,6 +296,8 @@ class Cdr_Controller extends Base_Controller
         $this->layout->nest('content', 'cdr.view', array(
             'cdr' => $cdr,
             'cdrs' => $related_cdrs,
+            'cels' => $related_cels,
+            'queue_logs' => $related_queue_logs,
             'filefield' => $filefield,
             'per_page_options' => $per_page_options,
             'total_billsec' => $total_billsec,
@@ -403,6 +407,21 @@ class Cdr_Controller extends Base_Controller
             ->left_join('asterisk.users AS users_src', 'src', '=', 'users_src.extension')
             ->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension')
             ->where_in('uniqueid', $uniqueids);
+    }
+
+    private static function get_cels_by_uniqueids($uniqueids)
+    {
+        return DB::table('cel')->select('*')
+            ->where_in('uniqueid', $uniqueids)
+            ->or_where_in('linkedid', $uniqueids);
+    }
+
+    private static function get_queue_logs_by_uniqueids($uniqueids)
+    {
+        Config::set('database.default', 'asteriskrealtime');
+
+        return DB::table('queue_log')->select('*')
+            ->where_in('callid', $uniqueids);
     }
 
     public function action_listen($uniqueid, $calldate)

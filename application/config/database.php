@@ -81,6 +81,16 @@ return array(
 			'prefix'   => '',
 		),
 
+        'asteriskrealtime' => array(
+            'driver'   => 'mysql',
+            'host'     => 'localhost',
+            'database' => 'asteriskrealtime',
+            'username' => 'cdrapp',
+            'password' => '',
+            'charset'  => 'utf8',
+            'prefix'   => '',
+        ),
+
 	),
 
 	/*
