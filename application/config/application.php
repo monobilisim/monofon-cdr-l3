@@ -183,7 +183,7 @@ return array(
 	),
 
 	'date_sorted_monitor'	=> false,
-	'filefield'		=> 'userfield',
+	'filefield'		=> 'recordingfile',
 	'extension'		=> 'WAV',
 	'multiserver'		=> false, // birden çok sunucuyu kapsıyorsa sunucu sayısını yaz
 	'dstchannel'		=> false,
