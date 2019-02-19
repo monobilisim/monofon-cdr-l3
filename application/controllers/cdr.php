@@ -413,7 +413,8 @@ class Cdr_Controller extends Base_Controller
     {
         return DB::table('cel')->select('*')
             ->where_in('uniqueid', $uniqueids)
-            ->or_where_in('linkedid', $uniqueids);
+            ->or_where_in('linkedid', $uniqueids)
+            ->or_where_in('accountcode', $uniqueids);
     }
 
     private static function get_queue_logs_by_uniqueids($uniqueids)
