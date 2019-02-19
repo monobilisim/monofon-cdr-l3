@@ -13,7 +13,7 @@ class Cdr extends Eloquent
 			return sprintf("%02d%s%02d", ($t/60)%60, ':', $t%60);
 	}
 
-        public static function format_billsec_before_transfer($t)
+        public static function format_agent_billsec($t)
         {
 		if (is_null($t)) {
 			return '';

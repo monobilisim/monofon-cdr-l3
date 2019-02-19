@@ -141,11 +141,11 @@ class Cdr_Controller extends Base_Controller
 
         $cdrs = PaginatorSorter::make($cdrs->results, $cdrs->total, $per_page, $default_sort);
 
-        $display_billsec_before_transfer = false;
-        if (Config::get('application.billsec_before_transfer')) {
-            $display_billsec_before_transfer = true;
+        $display_agent_billsec = false;
+        if (Config::get('application.agent_billsec')) {
+            $display_agent_billsec = true;
             foreach ($cdrs->results as $result) {
-                $result->billsec_before_transfer = self::calculate_billsec_before_transfer($result->uniqueid);
+                $result->agent_billsec = self::calculate_agent_billsec($result->uniqueid);
             }
         }
 
@@ -182,7 +182,7 @@ class Cdr_Controller extends Base_Controller
             'total_billsec' => $total_billsec,
             'colspan' => $colspan,
             'buttons' => $buttons,
-            'display_billsec_before_transfer' => $display_billsec_before_transfer,
+            'display_agent_billsec' => $display_agent_billsec,
         ));
     }
 
@@ -303,39 +303,70 @@ class Cdr_Controller extends Base_Controller
             'total_billsec' => $total_billsec,
             'colspan' => $colspan,
             'buttons' => $buttons,
-            'display_billsec_before_transfer' => false,
+            'display_agent_billsec' => false,
         ));
 
 
     }
 
-    private static function calculate_billsec_before_transfer($uniqueid)
+    private static function calculate_agent_billsec($uniqueid)
     {
         $related_uniqueids = self::get_related_uniueids($uniqueid);
-        $related_cdrs = self::get_cdrs_by_uniqueids($related_uniqueids)->get();
+        $related_cels = self::get_cels_by_uniqueids($related_uniqueids)->get();
 
-        $initial_dst = false;
-        $billsec_before_transfer = null;
-        foreach ($related_cdrs as $cdr) {
-            if (preg_match("/SIP\/{$cdr->dst}-.+/", $cdr->dstchannel)) {
-                $initial_dst = $cdr->dst;
-                $billsec_before_transfer = $cdr->billsec;
+        $call_transferred = false;
+        $agent_exten = null;
+        $last_event = null;
+        $billsec = 0;
+
+        foreach ($related_cels as $cel) {
+            // Eğer bir BLINDTRANSFER veya ATTENDEDTRANSFER event'i varsa
+            // çağrı transfer edilmiştir
+            if (in_array($cel->eventtype, array('BLINDTRANSFER', 'ATTENDEDTRANSFER'))) {
+                $call_transferred = true;
+            }
+
+            // Temsilcinin dahilisi henüz tespit edilmemişken gelen
+            // ilk from-internal context'indeki ANSWER event'inin
+            // exten'i temsilcinin dahilisidir.
+            if ($agent_exten === null && $cel->eventtype === 'ANSWER' && $cel->context === 'from-internal') {
+                $agent_exten = $cel->exten;
+            }
+
+            // Temsilcinin dahilisi tespit edilmişse, gelen event'leri
+            // kullanarak hesaplamaları yap
+            if ($agent_exten !== null) {
+                if (
+                    ($cel->eventtype === 'ANSWER' && $cel->context === 'from-internal' && $cel->exten === $agent_exten) ||
+                    $cel->eventtype === 'HOLD_END'
+                ) {
+                    $last_event = array(
+                        'type' => 'start',
+                        'time' => strtotime($cel->eventtime),
+                    );
+                } elseif (
+                    $cel->eventtype === 'HOLD_START' ||
+                    ($cel->context === 'from-internal' && in_array($cel->eventtype, array('BLINDTRANSFER', 'HANGUP')))
+                ) {
+                    if ($last_event['type'] === 'start') {
+                        $billsec += strtotime($cel->eventtime) - $last_event['time'];
+                    }
+                    $last_event = array(
+                        'type' => 'end',
+                        'time' => strtotime($cel->eventtime),
+                    );
+                }
+            }
+
+            // Çağrının temsilcideki kısmını tamamen sonlandıran event'leri gördüğünde
+            // hesaplamayı bırak
+            if ($cel->context === 'from-internal' && in_array($cel->eventtype, array('BLINDTRANSFER', 'HANGUP'))) {
                 break;
             }
         }
 
-        $call_transfered = false;
-        if ($initial_dst) {
-            foreach ($related_cdrs as $cdr) {
-                if ($cdr->src === $initial_dst) {
-                    $call_transfered = true;
-                    break;
-                }
-            }
-        }
-
-        if ($call_transfered) {
-            return $billsec_before_transfer;
+        if ($agent_exten !== null && $call_transferred) {
+            return $billsec;
         }
 
         return null;

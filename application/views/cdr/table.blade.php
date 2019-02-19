@@ -17,8 +17,8 @@
     @endif
     <th>{{ $cdrs->sortlink('disposition', 'Durum') }}</th>
     <th>{{ $cdrs->sortlink('billsec', 'Süre') }}</th>
-    @if ($display_billsec_before_transfer)
-        <th>Transfer Öncesi Süre</th>
+    @if ($display_agent_billsec)
+        <th>Temsilci Süre</th>
     @endif
     @if (Config::get('application.multiserver'))
         <th>{{ $cdrs->sortlink('server', 'Sunucu') }}</th>
@@ -51,11 +51,11 @@
             @endif
             <td>{{ __("misc.$cdr->disposition") }}</td>
             <td>{{ Cdr::format_billsec($cdr->billsec) }}</td>
-            @if ($display_billsec_before_transfer)
-                @if ($cdr->billsec <= $cdr->billsec_before_transfer)
-                    {{ $cdr->billsec_before_transfer = null }}
+            @if ($display_agent_billsec)
+                @if ($cdr->billsec <= $cdr->agent_billsec)
+                    {{ $cdr->agent_billsec = null }}
                 @endif
-                <td>{{ Cdr::format_billsec_before_transfer($cdr->billsec_before_transfer) }}</td>
+                <td>{{ Cdr::format_agent_billsec($cdr->agent_billsec) }}</td>
             @endif
             @if (Config::get('application.multiserver'))
                 <td>{{ $cdr->server }}</td>

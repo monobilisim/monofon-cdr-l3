@@ -190,6 +190,6 @@ return array(
 	'clid'			=> false,
 	'accountcode'		=> false,
     'remote_base_url' => false, // Ses dosyaları Minio vb. bir yerde tutuluyorsa "http://10.10.10.10:9000" biçiminde URL
-    'billsec_before_transfer' => false,
+    'agent_billsec' => false,
 
 );
