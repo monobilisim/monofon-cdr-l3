@@ -360,12 +360,12 @@ class Cdr_Controller extends Base_Controller
 
             // Çağrının temsilcideki kısmını tamamen sonlandıran event'leri gördüğünde
             // hesaplamayı bırak
-            if ($cel->context === 'from-internal' && in_array($cel->eventtype, array('BLINDTRANSFER', 'HANGUP'))) {
+            if ($agent_exten !== null && $cel->context === 'from-internal' && in_array($cel->eventtype, array('BLINDTRANSFER', 'HANGUP'))) {
                 break;
             }
         }
 
-        if ($agent_exten !== null && $call_transferred) {
+        if ($agent_exten !== null) {
             return $billsec;
         }
 
