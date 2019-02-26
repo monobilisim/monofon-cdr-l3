@@ -15,7 +15,7 @@ class Cdr extends Eloquent
 
         public static function format_agent_billsec($t)
         {
-		if (is_null($t)) {
+		if (!$t) {
 			return '';
 		}
 
