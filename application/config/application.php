@@ -182,7 +182,7 @@ return array(
 		'View'       	=> 'Laravel\\View',
 	),
 
-	'date_sorted_monitor'	=> false,
+	'date_sorted_monitor'	=> true,
 	'filefield'		=> 'recordingfile',
 	'extension'		=> 'WAV',
 	'multiserver'		=> false, // birden çok sunucuyu kapsıyorsa sunucu sayısını yaz
