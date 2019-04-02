@@ -26,7 +26,7 @@ h3 {
 }
 .form-filter .item {
 	float: left;
-	margin: 0 10px;
+	margin: 0 8px;
 }
 .form-filter .btn {
 	margin-top: 22px;
@@ -107,6 +107,17 @@ h3 {
 
 td.buttons {
 	white-space: nowrap;
+}
+
+td select {
+    margin-bottom: 0;
+    padding: 0;
+    font-size: 12px;
+    height: 20px;
+}
+
+td form {
+    margin-bottom: 0;
 }
 
 a.cdr-link {

@@ -20,10 +20,16 @@
             {{ Form::text('accountcode', Input::get('accountcode'), array('class' => 'input-small')) }}
         </div>
     @endif
-    @if (Config::get('application.multiserver'))
+    @if (Config::get('application.did'))
         <div class="item">
-            <label>Sunucu</label>
-            {{ Form::select('server', Cdr::get_options('server'), Input::get('server'), array('class' => 'input-mini')) }}
+            <label>DID</label>
+            {{ Form::select('did', Cdr::get_options('did'), Input::get('did'), array('class' => 'input-small')) }}
+        </div>
+    @endif
+    @if (Config::get('application.call_tags'))
+        <div class="item">
+            <label>Etiket</label>
+            {{ Form::select('tag', Cdr::get_options('tag'), Input::get('tag'), array('class' => 'input-medium')) }}
         </div>
     @endif
 
@@ -69,8 +75,8 @@
         {{ Form::text('per_page', Input::get('per_page'), array('class' => 'hide')) }}
     @endif
     <div class="item">
-        {{ Form::submit('Filtrele', array('class' => 'btn btn-primary', 'style' => 'margin-right: 8px')) }}
-        {{ Html::link('cdr', 'Sıfırla', array('class' => 'btn')) }}
+        {{ Form::submit('Filtrele', array('class' => 'btn btn-primary')) }}
+        <a href="{{ URL::current() }}" class="btn">Sıfırla</a>
     </div>
     {{ Form::close() }}
 

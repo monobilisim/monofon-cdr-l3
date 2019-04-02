@@ -4,6 +4,9 @@
         <tr>
             <th>calldate</th>
             <th>clid</th>
+            <th>cnum</th>
+            <th>cnam</th>
+            <th>did</th>
             <th>src</th>
             <th>dst</th>
             <th>dcontext</th>
@@ -20,6 +23,9 @@
         <tr>
             <td>{{ $cdr->calldate }}</td>
             <td>{{ $cdr->clid }}</td>
+            <td>{{ $cdr->cnum }}</td>
+            <td>{{ $cdr->cnam }}</td>
+            <td>{{ $cdr->did }}</td>
             <td>{{ $cdr->src }}</td>
             <td>{{ $cdr->dst }}</td>
             <td>{{ $cdr->dcontext }}</td>

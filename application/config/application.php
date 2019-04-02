@@ -185,11 +185,12 @@ return array(
 	'date_sorted_monitor'	=> true,
 	'filefield'		=> 'recordingfile',
 	'extension'		=> 'WAV',
-	'multiserver'		=> false, // birden çok sunucuyu kapsıyorsa sunucu sayısını yaz
 	'dstchannel'		=> false,
 	'clid'			=> false,
+	'did'			=> false,
 	'accountcode'		=> false,
     'remote_base_url' => false, // Ses dosyaları Minio vb. bir yerde tutuluyorsa "http://10.10.10.10:9000" biçiminde URL
     'agent_billsec' => false,
+    'call_tags' => false,
 
 );

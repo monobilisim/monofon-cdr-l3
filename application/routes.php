@@ -33,11 +33,15 @@
 |
 */
 
-Route::controller(array(
-	'home',
-	'user',
-	'cdr',
-));
+Route::group(array('before' => 'auth'), function()
+{
+    Route::controller(array(
+        'home',
+        'user',
+        'cdr',
+        'tag',
+    ));
+});
 
 Route::any('login', 'home@login');
 Route::get('logout', 'home@logout');

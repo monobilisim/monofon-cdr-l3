@@ -20,9 +20,6 @@
     @if ($display_agent_billsec)
         <th>Temsilci Süre</th>
     @endif
-    @if (Config::get('application.multiserver'))
-        <th>{{ $cdrs->sortlink('server', 'Sunucu') }}</th>
-    @endif
     @if ($buttons)
         <th style="width: 75px">Ses Kaydı</th>
     @endif
@@ -56,9 +53,6 @@
                     {{ $cdr->agent_billsec = null }}
                 @endif
                 <td>{{ Cdr::format_agent_billsec($cdr->agent_billsec) }}</td>
-            @endif
-            @if (Config::get('application.multiserver'))
-                <td>{{ $cdr->server }}</td>
             @endif
             @if ($buttons)
                 <td class="buttons">@if ($cdr->$filefield AND Cdr_Controller::cdr_file_exists($cdr))

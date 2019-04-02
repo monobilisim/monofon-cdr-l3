@@ -3,12 +3,6 @@
 class Cdr_Controller extends Base_Controller
 {
 
-    public function __construct()
-    {
-        parent::__construct();
-        $this->filter('before', 'auth');
-    }
-
     public static function cdr_file_exists($cdr)
     {
         $file = self::retrieve_file($cdr);
@@ -37,6 +31,8 @@ class Cdr_Controller extends Base_Controller
     public function before()
     {
         parent::before();
+        
+        // js
         Asset::add('jquery-ui', 'jquery-ui/jquery-ui-1.9.1.custom.min.js');
         Asset::add('jquery-ui-tr', 'jquery-ui/jquery.ui.datetimepicker-tr.js');
         Asset::add('jquery-ui-timepicker', 'jquery-ui/jquery-ui-timepicker-addon.js');
@@ -45,13 +41,35 @@ class Cdr_Controller extends Base_Controller
         Asset::add('wavesurfer-cursor', 'js/wavesurfer.cursor.js');
         Asset::add('wavesurfer-timeline', 'js/wavesurfer.timeline.js');
 
+        // css
         Asset::add('jquery-ui', 'jquery-ui/smoothness/jquery-ui-1.9.1.custom.min.css');
+        
+        Config::set('database.default', 'asterisk');
+    }
+    
+    private static function getCdrQuery()
+    {
+        $query = DB::table('cdr')->select(array(
+            'cdr.*',
+            'ringgroups.description',
+            'users_src.name AS src_name',
+            'users_dst.name AS dst_name'
+        ))
+            ->left_join('asterisk.ringgroups', 'dst', '=', 'asterisk.ringgroups.grpnum')
+            ->left_join('asterisk.users AS users_src', 'src', '=', 'users_src.extension')
+            ->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension');
+        if (Config::get('application.call_tags')) {
+            $query->selects[] = 'queue_log.data1 as tag';
+            $query->left_join('asteriskrealtime.queue_log', function($join) {
+                $join->on('queue_log.callid', '=', 'cdr.linkedid');
+                $join->on('queue_log.event', '=', DB::raw("'UPDATEFIELD'"));
+            });
+        }
+        return $query;
     }
 
     public function action_index()
     {
-        Config::set('database.default', 'asterisk');
-
         $filefield = Config::get('application.filefield');
 
         $per_page = Input::get('per_page', 10);
@@ -64,39 +82,35 @@ class Cdr_Controller extends Base_Controller
 
         extract(Input::get());
 
-        $datestart = !empty($datestart) ? self::format_datetime_input($datestart) : date('Y-m-d 00:00');
-        $dateend = !empty($dateend) ? self::format_datetime_input($dateend) : date('Y-m-d 23:59');
+        $datestart = !empty($datestart) ? Cdr::format_datetime_input($datestart) : date('Y-m-d 00:00');
+        $dateend = !empty($dateend) ? Cdr::format_datetime_input($dateend) : date('Y-m-d 23:59');
 
-        if (Config::get('application.multiserver')) {
-            $cdrs = DB::table('cdr')->select('*')
-                ->raw_where("calldate BETWEEN '$datestart' AND '$dateend'");
-        } else {
-            $cdrs = DB::table('cdr')->select(array(
-                '*',
-                'users_src.name AS src_name',
-                'users_dst.name AS dst_name'
-            ))
-                ->left_join('asterisk.ringgroups', 'dst', '=', 'asterisk.ringgroups.grpnum')
-                ->left_join('asterisk.users AS users_src', 'src', '=', 'users_src.extension')
-                ->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension')
-                ->raw_where("calldate BETWEEN '$datestart' AND '$dateend'");
-        }
+        $query = self::getCdrQuery();
+        $query->raw_where("calldate BETWEEN '$datestart' AND '$dateend'");
 
         if (!Auth::user()->allrows) {
-            $cdrs->where($filefield, '!=', '');
+            $query->where($filefield, '!=', '');
         }
 
         if (!empty($status)) {
-            $cdrs->where('disposition', '=', $status);
-        }
-        if (!empty($server)) {
-            $cdrs->where('server', '=', $server);
+            $query->where('disposition', '=', $status);
         }
         if (!empty($dstchannel)) {
-            $cdrs->where('dstchannel', 'LIKE', "%$dstchannel%");
+            $query->where('dstchannel', 'LIKE', "%$dstchannel%");
         }
         if (!empty($accountcode)) {
-            $cdrs->where('accountcode', 'LIKE', "%$accountcode%");
+            $query->where('accountcode', 'LIKE', "%$accountcode%");
+        }
+        if (!empty($did)) {
+            $query->where('did', '=', $did);
+        }
+        if (!empty($tag)) {
+            if ($tag == 'null') {
+                $query->where_null('queue_log.data1');
+            }
+            else {
+                $query->where('queue_log.data1', '=', $tag.Cdr::$tag_suffix);
+            }
         }
 
         $number_filters = array();
@@ -131,68 +145,75 @@ class Cdr_Controller extends Base_Controller
         }
 
         foreach ($wheres as $where) {
-            $cdrs->raw_where($where);
+            $query->raw_where($where);
         }
 
-        $total_billsec = $cdrs->sum('billsec');
+        $total_billsec = $query->sum('billsec');
 
-        $cdrs->order_by($sort, $dir);
-        $cdrs = $cdrs->paginate($per_page);
+        $query->order_by($sort, $dir);
+        $query = $query->paginate($per_page);
 
-        $cdrs = PaginatorSorter::make($cdrs->results, $cdrs->total, $per_page, $default_sort);
+        $cdrs = PaginatorSorter::make($query->results, $query->total, $per_page, $default_sort);
 
         $display_agent_billsec = false;
         if (Config::get('application.agent_billsec')) {
             $display_agent_billsec = true;
-            foreach ($cdrs->results as $result) {
+            foreach ($query->results as $result) {
                 $result->agent_billsec = self::calculate_agent_billsec($result->uniqueid);
             }
-        }
-
-        $per_page_options = array(
-            10 => 10,
-            25 => 25,
-            50 => 50,
-            100 => 100
-        );
-
-        $colspan = 6;
-        if (Config::get('application.multiserver')) {
-            $colspan++;
-        }
-        if (Config::get('application.dstchannel')) {
-            $colspan++;
-        }
-        if (Config::get('application.clid')) {
-            $colspan++;
-        }
-        if (Config::get('application.accountcode')) {
-            $colspan++;
-        }
-
-        $buttons = Auth::user()->buttons;
-        if (!$buttons) {
-            $colspan--;
         }
 
         $this->layout->nest('content', 'cdr.index', array(
             'cdrs' => $cdrs,
             'filefield' => $filefield,
-            'per_page_options' => $per_page_options,
+            'per_page_options' => Cdr::$per_page_options,
             'total_billsec' => $total_billsec,
-            'colspan' => $colspan,
-            'buttons' => $buttons,
+            'buttons' => Auth::user()->buttons,
             'display_agent_billsec' => $display_agent_billsec,
         ));
     }
-
-    protected static function format_datetime_input($input)
+    
+    public function action_update()
     {
-        $datetime_parts = explode(' - ', $input);
-        $date_parts = explode('.', $datetime_parts[0]);
-        $date_parts = array_reverse($date_parts);
-        $datetime_parts[0] = implode('-', $date_parts);
-        return implode(' ', $datetime_parts);
+        $linkedid = Input::get('linkedid');
+        $tag = Input::get('tag');
+        
+        $events = array(
+            'ENTERQUEUE',
+            'UPDATEFIELD',
+        );
+        
+        $qevents = array();
+        
+        foreach ($events as $event) {
+            $event_id = DB::table('qstats.qevent')->where('event', '=', $event)->only('event_id');
+            $qevents[$event] = (int) $event_id;
+        }
+        
+        $tag_with_suffix = $tag . Cdr::$tag_suffix;
+        
+        DB::table('asteriskrealtime.queue_log')
+                ->where('callid', '=', $linkedid)
+                ->where('event', '=', 'UPDATEFIELD')
+                ->update(array('data1' => $tag_with_suffix));
+                
+        DB::table('qstats.queue_stats')
+            ->where('uniqueid', '=', $linkedid)
+            ->where('qevent', '=', $qevents['ENTERQUEUE'])
+            ->update(array('info5' => $tag));
+        
+        DB::table('qstats.queue_stats')
+            ->where('uniqueid', '=', $linkedid)
+            ->where('qevent', '=', $qevents['UPDATEFIELD'])
+            ->update(array('info1' => $tag_with_suffix));
+        
+        DB::table('qstats.queue_stats_mv')
+            ->where('uniqueid', '=', $linkedid)
+            ->update(array('info5' => $tag));
+        
+        return Redirect::back()
+            ->with('message', 'Etiket güncellendi.')
+            ->with('message_status', 'success');
     }
 
     protected static function build_number_where_clauses($type, $number_filter)
@@ -240,8 +261,6 @@ class Cdr_Controller extends Base_Controller
 
     public function action_view($uniqueid, $timestamp)
     {
-        Config::set('database.default', 'asterisk');
-
         $filefield = Config::get('application.filefield');
 
         $per_page = Input::get('per_page', 10);
@@ -254,7 +273,8 @@ class Cdr_Controller extends Base_Controller
 
         $cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $timestamp))->first();
 
-        $related_uniqueids = self::get_related_uniueids($uniqueid);
+        $related_uniqueids = self::get_related_uniqueids($cdr->uniqueid, $cdr->linkedid);
+        if (!$related_uniqueids) $related_uniqueids = array('yok');
 
         $related_cdrs = self::get_cdrs_by_uniqueids($related_uniqueids);
         $related_cels = self::get_cels_by_uniqueids($related_uniqueids)->get();
@@ -267,51 +287,22 @@ class Cdr_Controller extends Base_Controller
 
         $related_cdrs = PaginatorSorter::make($related_cdrs->results, $related_cdrs->total, $per_page, $default_sort);
 
-        $per_page_options = array(
-            10 => 10,
-            25 => 25,
-            50 => 50,
-            100 => 100
-        );
-
-        $colspan = 6;
-        if (Config::get('application.multiserver')) {
-            $colspan++;
-        }
-        if (Config::get('application.dstchannel')) {
-            $colspan++;
-        }
-        if (Config::get('application.clid')) {
-            $colspan++;
-        }
-        if (Config::get('application.accountcode')) {
-            $colspan++;
-        }
-
-        $buttons = Auth::user()->buttons;
-        if (!$buttons) {
-            $colspan--;
-        }
-
         $this->layout->nest('content', 'cdr.view', array(
             'cdr' => $cdr,
             'cdrs' => $related_cdrs,
             'cels' => $related_cels,
             'queue_logs' => $related_queue_logs,
             'filefield' => $filefield,
-            'per_page_options' => $per_page_options,
+            'per_page_options' => Cdr::$per_page_options,
             'total_billsec' => $total_billsec,
-            'colspan' => $colspan,
             'buttons' => $buttons,
             'display_agent_billsec' => false,
         ));
-
-
     }
 
     private static function calculate_agent_billsec($uniqueid)
     {
-        $related_uniqueids = self::get_related_uniueids($uniqueid);
+        $related_uniqueids = self::get_related_uniqueids($uniqueid);
         $related_cels = self::get_cels_by_uniqueids($related_uniqueids)->get();
 
         $call_transferred = false;
@@ -372,12 +363,12 @@ class Cdr_Controller extends Base_Controller
         return null;
     }
 
-    private static function get_related_uniueids($uniqueid)
+    private static function get_related_uniqueids($uniqueid, $linkedid = 'dev')
     {
         $pass = DB::table('cel')
             ->select(array('uniqueid', 'linkedid'))
             ->where('uniqueid', '=', $uniqueid)
-            ->or_where('linkedid', '=', $uniqueid)
+            ->or_where('linkedid', '=', $linkedid)
             ->get();
 
         $last_criteria = array();
@@ -425,19 +416,9 @@ class Cdr_Controller extends Base_Controller
 
     private static function get_cdrs_by_uniqueids($uniqueids)
     {
-        if (Config::get('application.multiserver')) {
-            return DB::table('cdr')->select('*')
-                ->where_in('uniqueid', $uniqueids);
-        }
-        return DB::table('cdr')->select(array(
-            '*',
-            'users_src.name AS src_name',
-            'users_dst.name AS dst_name'
-        ))
-            ->left_join('asterisk.ringgroups', 'dst', '=', 'asterisk.ringgroups.grpnum')
-            ->left_join('asterisk.users AS users_src', 'src', '=', 'users_src.extension')
-            ->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension')
-            ->where_in('uniqueid', $uniqueids);
+        $query = self::getCdrQuery();
+        $query->where_in('uniqueid', $uniqueids);
+        return $query;
     }
 
     private static function get_cels_by_uniqueids($uniqueids)
@@ -458,7 +439,6 @@ class Cdr_Controller extends Base_Controller
 
     public function action_listen($uniqueid, $calldate)
     {
-        Config::set('database.default', 'asterisk');
         $cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $calldate))->first();
         $file = self::retrieve_file($cdr);
         $file_info = pathinfo($file['name']);
@@ -579,7 +559,6 @@ HTML;
 
     public function action_download($uniqueid, $calldate)
     {
-        Config::set('database.default', 'asterisk');
         $cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $calldate))->first();
         $file = self::retrieve_file($cdr);
 

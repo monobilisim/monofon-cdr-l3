@@ -15,8 +15,8 @@ $(document).ready(function() {
 	});
 
 	$("input[name='datestart']").change(function() {
-                $("input[name='dateend']").val($(this).val());
-        });
+            $("input[name='dateend']").val($(this).val());
+    });
 
 	$('.icon-question-sign').bind('mouseenter mouseleave', function() {
 		$(this).next().toggle();
@@ -25,32 +25,36 @@ $(document).ready(function() {
 	var input_src = $('#input_src');
 	var input_dst = $('#input_dst');
 	var input_src_dst = $('#input_src_dst');
+    
+    if (input_src.length > 0) {
 
-	if (input_src.val() || input_dst.val()) {
-		input_src_dst.addClass('grayed-out');
-	}
-	if (input_src_dst.val()) {
-		$([input_src[0], input_dst[0]]).addClass('grayed-out');
-	}
+        if (input_src.val() || input_dst.val()) {
+            input_src_dst.addClass('grayed-out');
+        }
+        if (input_src_dst.val()) {
+            $([input_src[0], input_dst[0]]).addClass('grayed-out');
+        }
 
-	input_src_dst.keypress(function() {
-		if (!$(this).val()) {
-			$([input_src[0], input_dst[0]]).val("");
-		}
-	});
-	input_src_dst.focus(function() {
-		$(this).removeClass('grayed-out');
-		$([input_src[0], input_dst[0]]).addClass('grayed-out');
-	});
-	$([input_src[0], input_dst[0]]).keypress(function() {
-		if (!$(this).val()) {
-			input_src_dst.val("");
-		}
-	});
-	$([input_src[0], input_dst[0]]).focus(function() {
-		$([input_src[0], input_dst[0]]).removeClass('grayed-out');
-		input_src_dst.addClass('grayed-out');
-	});
+        input_src_dst.keypress(function() {
+            if (!$(this).val()) {
+                $([input_src[0], input_dst[0]]).val("");
+            }
+        });
+        input_src_dst.focus(function() {
+            $(this).removeClass('grayed-out');
+            $([input_src[0], input_dst[0]]).addClass('grayed-out');
+        });
+        $([input_src[0], input_dst[0]]).keypress(function() {
+            if (!$(this).val()) {
+                input_src_dst.val("");
+            }
+        });
+        $([input_src[0], input_dst[0]]).focus(function() {
+            $([input_src[0], input_dst[0]]).removeClass('grayed-out');
+            input_src_dst.addClass('grayed-out');
+        });
+    
+    }
 
 	var per_page = $("#per-page").val();
 	
