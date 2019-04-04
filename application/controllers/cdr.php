@@ -295,7 +295,7 @@ class Cdr_Controller extends Base_Controller
             'filefield' => $filefield,
             'per_page_options' => Cdr::$per_page_options,
             'total_billsec' => $total_billsec,
-            'buttons' => $buttons,
+            'buttons' => Auth::user()->buttons,
             'display_agent_billsec' => false,
         ));
     }
