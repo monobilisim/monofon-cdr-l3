@@ -45,7 +45,7 @@
             <td>{{ $cel->linkedid }}</td>
             <td>{{ $cel->peer }}</td>
             <td>{{ $cel->userdeftype }}</td>
-            <td>{{ $cel->extra }}</td>
+            <td>{{ property_exists($cel, 'extra') ? $cel->extra : '' }}</td>
         </tr>
 
     @endforeach
