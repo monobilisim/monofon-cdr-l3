@@ -24,7 +24,7 @@
 $environments = array(
 
 	'development' => array('http://localhost*', '*.dev'),
-    'production' => array('http://*:8070', 'https://cdrapp*'),
+	'production' => array(':8070', '//cdr*'),
 
 );
 
