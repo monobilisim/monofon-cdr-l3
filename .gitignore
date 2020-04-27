@@ -36,6 +36,3 @@ intermediate
 publish
 .idea
 
-# Environment config directories
-application/config/development
-application/config/production

@@ -23,8 +23,7 @@
 
 $environments = array(
 
-	'development' => array('http://localhost*', '*.dev'),
-	'production' => array(':8070', '//cdr*'),
+	'local' => array('http://localhost*', '*.dev'),
 
 );
 
