@@ -44,7 +44,8 @@ class User_Controller extends Base_Controller {
 	{
 		$user = new User();
 		$user->fill(Input::old());
-		if (!Input::old()) $user->buttons = 1;
+		if (!Input::old()) $user->buttons_downloads = 1;
+                if (!Input::old()) $user->buttons_listen = 1;
 
 		$this->layout->title = 'Kullanıcı Kaydı Oluştur';
 		$this->layout->nest('content', 'user.form', array(
