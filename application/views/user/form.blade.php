@@ -44,12 +44,21 @@
     </label>
     </div>
   </div>
-  
+
+   <div class="control-group">
+    <div class="controls checkbox">
+    {{ Form::hidden('buttons_listen', '0') }}
+    <label>
+      {{ Form::checkbox('buttons_listen', '1', $user->buttons_listen) }} Dinle butonlarını görsün
+    </label>
+    </div>
+  </div>
+ 
   <div class="control-group">
     <div class="controls checkbox">
-    {{ Form::hidden('buttons', '0') }}
+    {{ Form::hidden('buttons_download', '0') }}
     <label>
-      {{ Form::checkbox('buttons', '1', $user->buttons) }} Dinle/İndir butonlarını görsün
+      {{ Form::checkbox('buttons_download', '1', $user->buttons_download) }} İndir butonlarını görsün
     </label>
     </div>
   </div>
