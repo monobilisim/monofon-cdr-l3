@@ -14,6 +14,8 @@ class Add_Button_Download_And_Button_Listen_To_Users {
                         $table->boolean('buttons_download')->default(1);
                         $table->boolean('buttons_listen')->default(1);
                 });
+
+                DB::query('UPDATE users SET buttons_download = buttons, buttons_listen = buttons');
         }
 
         /**
