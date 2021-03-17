@@ -23,7 +23,7 @@ class Cdr_Controller extends Base_Controller
         $file['name'] = basename(preg_replace('/^audio:/', '', $cdr->$filefield));
 	// cdr tablosunda bazı satırlarda filefield sütunu dosya uzantısı içermiyor, eğer öyleyse uzantıyı ekleyelim
         $ext = Config::get('application.extension');
-        if (strpos($file['name'], ".$ext") === false) {
+        if (strpos($file['name'], ".$ext") === false && !in_array(pathinfo($file['name'], PATHINFO_EXTENSION), array('WAV', 'wav'))) {
             $file['name'] .= ".$ext";
         }
         return $file;
