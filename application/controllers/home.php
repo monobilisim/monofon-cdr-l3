@@ -29,9 +29,9 @@ class Home_Controller extends Base_Controller {
 	|		}
 	|
 	*/
-	
+
 	public $restful = true;
-	
+
 	public function get_index()
 	{
 		if (Auth::check())
@@ -54,9 +54,14 @@ class Home_Controller extends Base_Controller {
 	{
 		$input = Input::get();
 		$redirect = 'cdr';
-		
+
 		if (Auth::attempt($input))
 		{
+			$dir = Cdr::getTemporaryOggDir();
+			foreach (glob($dir . '/*') as $file) {
+				unlink($file);
+			}
+
 			//if (isset($input['redirect'])) $redirect = $input['redirect'];
 			return Redirect::to($redirect)
 				/*->with('message', 'Giriş yapıldı.')
@@ -69,10 +74,10 @@ class Home_Controller extends Base_Controller {
 				->with_input()
 				->with('message', 'Geçersiz kullanıcı adı ve/veya şifre.')
 				->with('message_status', 'error');
-			
+
 		}
 	}
-	
+
 	public function get_logout()
 	{
 		Auth::logout();
