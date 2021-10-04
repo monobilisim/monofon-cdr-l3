@@ -21,7 +21,7 @@ class Cdr_Controller extends Base_Controller
             $file['path'] = "";
         }
         $file['name'] = basename(preg_replace('/^audio:/', '', $cdr->$filefield));
-	// cdr tablosunda bazı satırlarda filefield sütunu dosya uzantısı içermiyor, eğer öyleyse uzantıyı ekleyelim
+	    // cdr tablosunda bazı satırlarda filefield sütunu dosya uzantısı içermiyor, eğer öyleyse uzantıyı ekleyelim
         $ext = Config::get('application.extension');
         if (strpos($file['name'], ".$ext") === false && !in_array(pathinfo($file['name'], PATHINFO_EXTENSION), array('WAV', 'wav'))) {
             $file['name'] .= ".$ext";
@@ -32,7 +32,7 @@ class Cdr_Controller extends Base_Controller
     public function before()
     {
         parent::before();
-        
+
         // js
         Asset::add('jquery-ui', 'jquery-ui/jquery-ui-1.9.1.custom.min.js');
         Asset::add('jquery-ui-tr', 'jquery-ui/jquery.ui.datetimepicker-tr.js');
@@ -44,10 +44,10 @@ class Cdr_Controller extends Base_Controller
 
         // css
         Asset::add('jquery-ui', 'jquery-ui/smoothness/jquery-ui-1.9.1.custom.min.css');
-        
+
         Config::set('database.default', 'asterisk');
     }
-    
+
     private static function getCdrQuery()
     {
         $query = DB::table('cdr')->select(array(
@@ -174,45 +174,45 @@ class Cdr_Controller extends Base_Controller
             'display_agent_billsec' => $display_agent_billsec,
         ));
     }
-    
+
     public function action_update()
     {
         $linkedid = Input::get('linkedid');
         $tag = Input::get('tag');
-        
+
         $events = array(
             'ENTERQUEUE',
             'UPDATEFIELD',
         );
-        
+
         $qevents = array();
-        
+
         foreach ($events as $event) {
             $event_id = DB::table('qstats.qevent')->where('event', '=', $event)->only('event_id');
             $qevents[$event] = (int) $event_id;
         }
-        
+
         $tag_with_suffix = $tag . Cdr::$tag_suffix;
-        
+
         DB::table('asteriskrealtime.queue_log')
                 ->where('callid', '=', $linkedid)
                 ->where('event', '=', 'UPDATEFIELD')
                 ->update(array('data1' => $tag_with_suffix));
-                
+
         DB::table('qstats.queue_stats')
             ->where('uniqueid', '=', $linkedid)
             ->where('qevent', '=', $qevents['ENTERQUEUE'])
             ->update(array('info5' => $tag));
-        
+
         DB::table('qstats.queue_stats')
             ->where('uniqueid', '=', $linkedid)
             ->where('qevent', '=', $qevents['UPDATEFIELD'])
             ->update(array('info1' => $tag_with_suffix));
-        
+
         DB::table('qstats.queue_stats_mv')
             ->where('uniqueid', '=', $linkedid)
             ->update(array('info5' => $tag));
-        
+
         return Redirect::back()
             ->with('message', 'Etiket güncellendi.')
             ->with('message_status', 'success');
@@ -446,116 +446,110 @@ class Cdr_Controller extends Base_Controller
         $file = self::retrieve_file($cdr);
         $file_info = pathinfo($file['name']);
 
-        $html = '';
-        if ($file_info['extension'] === 'WAV') {
-            $html .= '<embed src="/wavplayer.swf?gui=full&autoplay=true&h=20&w=300&sound=/cdr/download/' . $uniqueid . '/' . $calldate . '" width="300" height="20" scale="noscale" bgcolor="#dddddd"/>';
-        } elseif ($file_info['extension'] === 'ogg') {
-            $html = <<<HTML
-                <div id="waveform-progress-wrapper">
-                    <div id="waveform-progress" class="progress progress-striped active"><div class="bar" style="width: 0%;"></div></div>
-                </div>
-                <div id="waveform"></div>
-                <div id="wave-timeline"></div>
-                
-                <div class="controls">
-                    <button data-toggle="tooltip" data-placement="bottom" title="2 saniye geri" class="btn" data-action="backward"><i class="icon-backward"></i></button>
-                    <button data-toggle="tooltip" data-placement="bottom" title="Oynat/Duraklat" class="btn" data-action="play"><i class="icon-play"></i> / <i class="icon-pause"></i> (<span id="time-current" style="font-family:monospace;">00:00.000</span> / <span id="time-total" style="font-family:monospace;">00:00.000</span>)</button>
-                    <button data-toggle="tooltip" data-placement="bottom" title="2 saniye ileri" class="btn" data-action="forward"><i class="icon-forward"></i></button>
-                </div>
-                  
-                <script>
-                    $('[data-toggle="tooltip"]').tooltip();
-                
-                    var wavesurfer = WaveSurfer.create({
-                        container: '#waveform',
-                        waveColor: '#828282',
-                        progressColor: '#0088CC',
-                        height: 120,
-                        barHeight: 1,
-                        skipLength: 2,
-                        plugins: [
-                            WaveSurfer.cursor.create({
-                                showTime: true,
-                                opacity: 0.7,
-                                customShowTimeStyle: {
-                                    'background-color': '#000',
-                                    color: '#fff',
-                                    padding: '2px',
-                                    'font-size': '10px'
-                                }
-                            }),
-                            WaveSurfer.timeline.create({
-                                container: "#wave-timeline"
-                            })
-                        ]
-                    });
-        
-                    $('#waveform-progress-wrapper').show();
-                    $('#waveform').css({'height': 0, 'overflow': 'hidden'});
+        $html = <<<HTML
+            <div id="waveform-progress-wrapper">
+                <div id="waveform-progress" class="progress progress-striped active"><div class="bar" style="width: 0%;"></div></div>
+            </div>
+            <div id="waveform"></div>
+            <div id="wave-timeline"></div>
 
-                    wavesurfer.load('/cdr/download/$uniqueid/$calldate');
+            <div class="controls">
+                <button data-toggle="tooltip" data-placement="bottom" title="2 saniye geri" class="btn" data-action="backward"><i class="icon-backward"></i></button>
+                <button data-toggle="tooltip" data-placement="bottom" title="Oynat/Duraklat" class="btn" data-action="play"><i class="icon-play"></i> / <i class="icon-pause"></i> (<span id="time-current" style="font-family:monospace;">00:00.000</span> / <span id="time-total" style="font-family:monospace;">00:00.000</span>)</button>
+                <button data-toggle="tooltip" data-placement="bottom" title="2 saniye ileri" class="btn" data-action="forward"><i class="icon-forward"></i></button>
+            </div>
 
-                    wavesurfer.on('loading', function (percentage) {
-                        $('#waveform-progress .bar').css('width', percentage.toString() + '%');
-                    });
-        
-                    wavesurfer.on('ready', function () {
-                        $('#waveform-progress-wrapper').hide();
-                        $('#waveform').css({'height': '', 'overflow': ''});
-                        wavesurfer.play();
-                    });
-        
-                    wavesurfer.on('audioprocess', function() {
-                        if(wavesurfer.isPlaying()) {
-                            var totalTime = wavesurfer.getDuration(),
-                            currentTime = wavesurfer.getCurrentTime();
-        
-                            document.getElementById('time-total').innerText = formatDuration(totalTime.toFixed(3));
-                            document.getElementById('time-current').innerText = formatDuration(currentTime.toFixed(3));
-                        }
-                    });
-        
-                    $('.controls .btn').on('click', function(){
-                        var action = $(this).data('action');
-                        switch (action) {
-                            case 'play':
-                                wavesurfer.playPause();
-                                break;
-                            case 'backward':
-                                wavesurfer.skipBackward();
-                                break;
-                            case 'forward':
-                                wavesurfer.skipForward();
-                                break;
-                        }
-                    });
-                    
-                    $("#listen").on('hidden', function() {
-                      wavesurfer.destroy();  
-                    })
-                    
-                    function formatDuration(duration) {
-                        var totalSeconds = parseInt(duration.split('.')[0]);
-                        var minutes = Math.floor(totalSeconds / 60);
-                        var seconds = totalSeconds - minutes * 60;
-                        var miliSeconds = duration.split('.')[1];
-                      
-                        minutes = minutes.toString();
-                        seconds = seconds.toString();
-                        
-                        if (minutes.length === 1) {
-                            minutes = '0' + minutes;
-                        }
-                        if (seconds.length === 1) {
-                            seconds = '0' + seconds;
-                        }
-                    
-                        return minutes + ':' + seconds + '.' + miliSeconds;
+            <script>
+                $('[data-toggle="tooltip"]').tooltip();
+
+                var wavesurfer = WaveSurfer.create({
+                    container: '#waveform',
+                    waveColor: '#828282',
+                    progressColor: '#0088CC',
+                    height: 120,
+                    barHeight: 1,
+                    skipLength: 2,
+                    plugins: [
+                        WaveSurfer.cursor.create({
+                            showTime: true,
+                            opacity: 0.7,
+                            customShowTimeStyle: {
+                                'background-color': '#000',
+                                color: '#fff',
+                                padding: '2px',
+                                'font-size': '10px'
+                            }
+                        }),
+                        WaveSurfer.timeline.create({
+                            container: "#wave-timeline"
+                        })
+                    ]
+                });
+
+                $('#waveform-progress-wrapper').show();
+                $('#waveform').css({'height': 0, 'overflow': 'hidden'});
+
+                wavesurfer.load('/cdr/download/$uniqueid/$calldate');
+
+                wavesurfer.on('loading', function (percentage) {
+                    $('#waveform-progress .bar').css('width', percentage.toString() + '%');
+                });
+
+                wavesurfer.on('ready', function () {
+                    $('#waveform-progress-wrapper').hide();
+                    $('#waveform').css({'height': '', 'overflow': ''});
+                    wavesurfer.play();
+                });
+
+                wavesurfer.on('audioprocess', function() {
+                    if(wavesurfer.isPlaying()) {
+                        var totalTime = wavesurfer.getDuration(),
+                        currentTime = wavesurfer.getCurrentTime();
+
+                        document.getElementById('time-total').innerText = formatDuration(totalTime.toFixed(3));
+                        document.getElementById('time-current').innerText = formatDuration(currentTime.toFixed(3));
                     }
-                </script>
-HTML;
+                });
 
-        }
+                $('.controls .btn').on('click', function(){
+                    var action = $(this).data('action');
+                    switch (action) {
+                        case 'play':
+                            wavesurfer.playPause();
+                            break;
+                        case 'backward':
+                            wavesurfer.skipBackward();
+                            break;
+                        case 'forward':
+                            wavesurfer.skipForward();
+                            break;
+                    }
+                });
+
+                $("#listen").on('hidden', function() {
+                    wavesurfer.destroy();
+                })
+
+                function formatDuration(duration) {
+                    var totalSeconds = parseInt(duration.split('.')[0]);
+                    var minutes = Math.floor(totalSeconds / 60);
+                    var seconds = totalSeconds - minutes * 60;
+                    var miliSeconds = duration.split('.')[1];
+
+                    minutes = minutes.toString();
+                    seconds = seconds.toString();
+
+                    if (minutes.length === 1) {
+                        minutes = '0' + minutes;
+                    }
+                    if (seconds.length === 1) {
+                        seconds = '0' + seconds;
+                    }
+
+                    return minutes + ':' + seconds + '.' + miliSeconds;
+                }
+            </script>
+HTML;
 
         return $html;
     }
@@ -565,9 +559,21 @@ HTML;
         $cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $calldate))->first();
         $file = self::retrieve_file($cdr);
 
-        if (file_exists('file:///var/spool/asterisk/monitor/' . $file['path'] . '/' . $file['name'])) {
-            return Response::download('/var/spool/asterisk/monitor/' . $file['path'] . '/' . $file['name'],
-                $file['name']);
+        $_file = $file['path'] . '/' . $file['name'];
+
+        $abs_path = '/var/spool/asterisk/monitor/' . $_file;
+        if (file_exists('file://' . $abs_path)) {
+            $file_info = pathinfo($_file);
+            if ($file_info['extension'] == 'WAV') {
+                $temp_path = Cdr::getTemporaryOggDir();
+                if (!file_exists($temp_path)) {
+                    mkdir($temp_path, 0755);
+                }
+                $abs_path_ogg = str_replace('.WAV', '.ogg', $temp_path . '/' . $file['name']);
+                exec('asterisk -rx "file convert ' . $abs_path . ' ' . $abs_path_ogg . '"');
+                $abs_path = $abs_path_ogg;
+            }
+            return Response::download($abs_path, $file['name']);
         }
 
         if ($remote_base_url = Config::get('application.remote_base_url')) {

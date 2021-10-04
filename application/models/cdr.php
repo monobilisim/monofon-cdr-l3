@@ -4,7 +4,7 @@ class Cdr extends Eloquent
 {
 	public static $table = 'cdr';
 	public static $key = 'uniqueid';
-	
+
 	public static function format_billsec($t)
 	{
 		if ($t >= 3600)
@@ -21,7 +21,7 @@ class Cdr extends Eloquent
 
 		return self::format_billsec($t);
         }
-	
+
 	public static function format_src_dst($cdr, $type)
 	{
 		$name = $type . '_name';
@@ -48,7 +48,7 @@ class Cdr extends Eloquent
 		preg_match('/"(.+)"/', $clid, $matches);
 		return isset($matches[1]) ? $matches[1] : '';
 	}
-	
+
 	public static function get_options($name)
 	{
 		if ($name == 'did')
@@ -67,7 +67,7 @@ class Cdr extends Eloquent
 				$options[$rg->grpnum] = $rg->grpnum . ' / ' . $rg->description;
 			}
 		}
-		
+
         if ($name == 'status')
 		{
 			$options = array(
@@ -78,7 +78,7 @@ class Cdr extends Eloquent
 				'BUSY'       => __('misc.busy'),
 			);
 		}
-		
+
         if ($name == 'scope')
 		{
 			$calldir = Input::get('calldir');
@@ -100,7 +100,7 @@ class Cdr extends Eloquent
 				'out' => 'Dış Aramalar',
 			);
 		}
-		
+
         if ($name == 'tag' || $name == 'tag_update')
 		{
             static $call_tags = null;
@@ -117,7 +117,7 @@ class Cdr extends Eloquent
 				$options[$call_tag] = $call_tag;
 			}
 		}
-        
+
         if ($name == 'agent') {
             $options = array('' => '');
 			$users = DB::table('asterisk.users')->select(array('extension', 'name'))->order_by('extension')->get();
@@ -125,24 +125,24 @@ class Cdr extends Eloquent
 				$options[$user->name] = $user->name;
 			}
         }
-		
+
         return $options;
 	}
-    
+
     public static $tag_suffix = '~info5';
-    
+
     public static function format_tag($tag)
     {
         return str_replace(self::$tag_suffix, '', $tag);
     }
-    
+
     public static $per_page_options = array(
         10 => 10,
         25 => 25,
         50 => 50,
         100 => 100,
     );
-    
+
     public static function format_datetime_input($input)
     {
         $datetime_parts = explode(' - ', $input);
@@ -151,7 +151,7 @@ class Cdr extends Eloquent
         $datetime_parts[0] = implode('-', $date_parts);
         return implode(' ', $datetime_parts);
     }
-    
+
     public static function export_url()
     {
         $url = $_SERVER['REQUEST_URI'];
@@ -164,5 +164,10 @@ class Cdr extends Eloquent
         }
         return $url;
     }
+
+	public static function getTemporaryOggDir()
+	{
+		return path('storage') . 'tmp';
+	}
 
 }
