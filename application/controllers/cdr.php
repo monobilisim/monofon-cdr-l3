@@ -3,13 +3,6 @@
 class Cdr_Controller extends Base_Controller
 {
 
-    public static function cdr_file_exists($cdr)
-    {
-        $file = self::retrieve_file($cdr);
-        //return file_exists('file:///var/spool/asterisk/monitor/' . $file['path'] . '/' . $file['name']);
-        return true;
-    }
-
     public static function retrieve_file($cdr)
     {
         $filefield = Config::get('application.filefield');
