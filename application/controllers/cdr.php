@@ -23,7 +23,7 @@ class Cdr_Controller extends Base_Controller
         $file['name'] = basename(preg_replace('/^audio:/', '', $cdr->$filefield));
 	    // cdr tablosunda bazı satırlarda filefield sütunu dosya uzantısı içermiyor, eğer öyleyse uzantıyı ekleyelim
         $ext = Config::get('application.extension');
-        if (strpos($file['name'], ".$ext") === false && !in_array(pathinfo($file['name'], PATHINFO_EXTENSION), array('WAV', 'wav'))) {
+        if (strpos($file['name'], ".$ext") === false && !in_array(pathinfo($file['name'], PATHINFO_EXTENSION), array('WAV', 'wav', 'ogg'))) {
             $file['name'] .= ".$ext";
         }
         return $file;
@@ -443,8 +443,6 @@ class Cdr_Controller extends Base_Controller
     public function action_listen($uniqueid, $calldate)
     {
         $cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $calldate))->first();
-        $file = self::retrieve_file($cdr);
-        $file_info = pathinfo($file['name']);
 
         $html = <<<HTML
             <div id="waveform-progress-wrapper">
@@ -559,28 +557,37 @@ HTML;
         $cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $calldate))->first();
         $file = self::retrieve_file($cdr);
 
-        $_file = $file['path'] . '/' . $file['name'];
+        $abs_path = '/var/spool/asterisk/monitor/' . $file['path'] . '/' . $file['name'];
 
-        $abs_path = '/var/spool/asterisk/monitor/' . $_file;
-        if (file_exists('file://' . $abs_path)) {
-            $file_info = pathinfo($_file);
-            if ($file_info['extension'] == 'WAV') {
-                $temp_path = Cdr::getTemporaryOggDir();
-                if (!file_exists($temp_path)) {
-                    mkdir($temp_path, 0755);
-                }
-                $abs_path_ogg = str_replace('.WAV', '.ogg', $temp_path . '/' . $file['name']);
-                exec('asterisk -rx "file convert ' . $abs_path . ' ' . $abs_path_ogg . '"');
-                $abs_path = $abs_path_ogg;
-            }
-            return Response::download($abs_path, $file['name']);
+        $file_url = null;
+        if (!file_exists('file://' . $abs_path)) {
+            $remote_base_url = Config::get('application.remote_base_url');
+            $file_url = $remote_base_url . '/monitor/' . $file['path'] . '/' . urlencode($file['name']);
         }
 
-        if ($remote_base_url = Config::get('application.remote_base_url')) {
-            $file_url = $remote_base_url . '/monitor/' . $file['path'] . '/' . urlencode($file['name']);
-            header('Content-Transfer-Encoding: Binary');
-            header('Content-Disposition: attachment; filename="' . $file['name'] . '"');
-            readfile($file_url);
+        $file_info = pathinfo($file['name']);
+        if ($file_info['extension'] == 'WAV') {
+            // ses kaydı türü wav ise önce ogg'ye dönüştürelim
+            $temp_path = Cdr::getTemporaryOggDir();
+            if (!file_exists($temp_path)) {
+                mkdir($temp_path, 0755);
+            }
+            if ($file_url) {
+                $abs_path = $temp_path . '/' . $file['name'];
+                file_put_contents($abs_path, fopen($file_url, 'r'));
+            }
+            $file['name'] = str_replace('.WAV', '.ogg', $file['name']);
+            $abs_path_ogg = $temp_path . '/' . $file['name'];
+            exec('asterisk -rx "file convert ' . $abs_path . ' ' . $abs_path_ogg . '"');
+            return Response::download($abs_path_ogg, $file['name']);
+        } else {
+            if ($file_url) {
+                header('Content-Transfer-Encoding: Binary');
+                header('Content-Disposition: attachment; filename="' . $file['name'] . '"');
+                readfile($file_url);
+            } else {
+                return Response::download($abs_path, $file['name']);
+            }
         }
     }
 }

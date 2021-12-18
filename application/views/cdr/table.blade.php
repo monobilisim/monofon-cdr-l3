@@ -56,7 +56,7 @@
             @endif
             @if ($buttons_download || $buttons_listen)
       		<td class="buttons">
-        	    @if ($cdr->$filefield AND Cdr_Controller::cdr_file_exists($cdr))
+        	    @if ($cdr->$filefield)
           	    {{ Form::hidden('uniqueid', $cdr->uniqueid) }}
           	    {{ Form::hidden('calldate', strtotime($cdr->calldate)) }}
           	    @if ($buttons_listen)
