@@ -199,7 +199,8 @@ class URL {
 		// If a bundle exists for the action, we will attempt to use it's "handles"
 		// clause as the root of the generated URL, as the bundle can only handle
 		// URIs that begin with that string and no others.
-		$root = $bundle['handles'] ?: '';
+		//$root = $bundle['handles'] ?: '';
+		$root = isset($bundle) ? $bundle['handles'] : '';
 
 		$parameters = implode('/', $parameters);
 

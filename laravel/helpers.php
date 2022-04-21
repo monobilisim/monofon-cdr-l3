@@ -292,7 +292,8 @@ function eloquent_to_json($models)
  */
 function magic_quotes()
 {
-	return function_exists('get_magic_quotes_gpc') and get_magic_quotes_gpc();
+	//return function_exists('get_magic_quotes_gpc') and get_magic_quotes_gpc();
+	return false;
 }
 
 /**
