@@ -483,6 +483,7 @@ class View implements ArrayAccess {
 	/**
 	 * Implementation of the ArrayAccess offsetExists method.
 	 */
+    #[\ReturnTypeWillChange]
 	public function offsetExists($offset)
 	{
 		return array_key_exists($offset, $this->data);
@@ -491,6 +492,7 @@ class View implements ArrayAccess {
 	/**
 	 * Implementation of the ArrayAccess offsetGet method.
 	 */
+    #[\ReturnTypeWillChange]
 	public function offsetGet($offset)
 	{
 		if (isset($this[$offset])) return $this->data[$offset];
@@ -499,6 +501,7 @@ class View implements ArrayAccess {
 	/**
 	 * Implementation of the ArrayAccess offsetSet method.
 	 */
+    #[\ReturnTypeWillChange]
 	public function offsetSet($offset, $value)
 	{
 		$this->data[$offset] = $value;
@@ -507,6 +510,7 @@ class View implements ArrayAccess {
 	/**
 	 * Implementation of the ArrayAccess offsetUnset method.
 	 */
+    #[\ReturnTypeWillChange]
 	public function offsetUnset($offset)
 	{
 		unset($this->data[$offset]);

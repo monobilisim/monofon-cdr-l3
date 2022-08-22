@@ -58,6 +58,7 @@ class Error {
 	 */
 	public static function native($code, $error, $file, $line)
 	{
+        if ($code == E_DEPRECATED) return;
 		if (error_reporting() === 0) return;
 
 		// For a PHP error, we'll create an ErrorExcepetion and then feed that

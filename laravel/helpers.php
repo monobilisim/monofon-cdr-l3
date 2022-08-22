@@ -412,7 +412,7 @@ function ends_with($haystack, $needle)
  * @param  string|array  $needle
  * @return bool
  */
-function str_contains($haystack, $needle)
+/*function str_contains($haystack, $needle)
 {
 	foreach ((array) $needle as $n)
 	{
@@ -420,7 +420,7 @@ function str_contains($haystack, $needle)
 	}
 
 	return false;
-}
+}*/
 
 /**
  * Cap a string with a single instance of the given string.
