@@ -1,7 +1,7 @@
 @section('content')
 
 <h3>{{ $title }}</h3>
-<p><a href="/user/create">Yeni Kullanıcı Ekle</a></p>
+<p><a href="/user/create">Yeni Kullanıcı Ekle</a> |  <a href="/user/user_auth_log">Giriş Logları</a></p>
 
 @if (empty($users->results))
   <div class="alert alert-error">Kullanıcı kaydı bulunamadı.</div>

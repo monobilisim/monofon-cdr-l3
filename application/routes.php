@@ -33,13 +33,12 @@
 |
 */
 
-Route::group(array('before' => 'auth'), function()
-{
+Route::group(array('before' => 'auth'), function () {
     Route::controller(array(
         'home',
         'user',
         'cdr',
-        'tag',
+        'tag'
     ));
 });
 
@@ -61,14 +60,12 @@ Route::get('logout', 'home@logout');
 |
 */
 
-Event::listen('404', function()
-{
-	return Response::error('404');
+Event::listen('404', function () {
+    return Response::error('404');
 });
 
-Event::listen('500', function()
-{
-	return Response::error('500');
+Event::listen('500', function () {
+    return Response::error('500');
 });
 
 /*
@@ -99,40 +96,34 @@ Event::listen('500', function()
 |
 */
 
-Route::filter('before', function()
-{
-	// Do stuff before every request to your application...
+Route::filter('before', function () {
+    // Do stuff before every request to your application...
 });
 
-Route::filter('after', function($response)
-{
-	// Do stuff after every request to your application...
+Route::filter('after', function ($response) {
+    // Do stuff after every request to your application...
 });
 
-Route::filter('csrf', function()
-{
-	if (Request::forged()) return Response::error('500');
+Route::filter('csrf', function () {
+    if (Request::forged()) {
+        return Response::error('500');
+    }
 });
 
-Route::filter('auth', function($role = '')
-{
-	$deny_access = false;
-	
-	if (!Auth::check())
-	{
-		$deny_access = true;
-	}
-	
-	else
-	if ($role AND Auth::user()->role !== $role)
-	{
-		$deny_access = true;
-	}
-	
-	if ($deny_access)
-	{
-		return Redirect::to('login')
-			->with('message', 'Erişim engellendi. Bu sayfaya erişim izniniz yok.')
-			->with('message_status', 'error');
-	}
+Route::filter('auth', function ($role = '') {
+    $deny_access = false;
+
+    if (!Auth::check()) {
+        $deny_access = true;
+    } elseif ($role and Auth::user()->role !== $role) {
+        $deny_access = true;
+    }
+
+    if ($deny_access) {
+        return Redirect::to('login')
+            ->with('message', 'Erişim engellendi. Bu sayfaya erişim izniniz yok.')
+            ->with('message_status', 'error');
+    }
 });
+
+Route::get('deneme', 'user@deneme');

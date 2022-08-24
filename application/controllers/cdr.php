@@ -2,7 +2,6 @@
 
 class Cdr_Controller extends Base_Controller
 {
-
     public static function retrieve_file($cdr)
     {
         $filefield = Config::get('application.filefield');
@@ -14,7 +13,7 @@ class Cdr_Controller extends Base_Controller
             $file['path'] = "";
         }
         $file['name'] = basename(preg_replace('/^audio:/', '', $cdr->$filefield));
-	    // cdr tablosunda bazı satırlarda filefield sütunu dosya uzantısı içermiyor, eğer öyleyse uzantıyı ekleyelim
+        // cdr tablosunda bazı satırlarda filefield sütunu dosya uzantısı içermiyor, eğer öyleyse uzantıyı ekleyelim
         $ext = Config::get('application.extension');
         if (strpos($file['name'], ".$ext") === false && !in_array(pathinfo($file['name'], PATHINFO_EXTENSION), array('WAV', 'wav', 'ogg'))) {
             $file['name'] .= ".$ext";
@@ -54,7 +53,7 @@ class Cdr_Controller extends Base_Controller
             ->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension');
         if (Config::get('application.call_tags')) {
             $query->selects[] = 'queue_log.data1 as tag';
-            $query->left_join('asteriskrealtime.queue_log', function($join) {
+            $query->left_join('asteriskrealtime.queue_log', function ($join) {
                 $join->on('queue_log.callid', '=', 'cdr.linkedid');
                 $join->on('queue_log.event', '=', DB::raw("'UPDATEFIELD'"));
             });
@@ -101,8 +100,7 @@ class Cdr_Controller extends Base_Controller
         if (!empty($tag)) {
             if ($tag == 'null') {
                 $query->where_null('queue_log.data1');
-            }
-            else {
+            } else {
                 $query->where('queue_log.data1', '=', $tag.Cdr::$tag_suffix);
             }
         }
@@ -163,7 +161,7 @@ class Cdr_Controller extends Base_Controller
             'per_page_options' => Cdr::$per_page_options,
             'total_billsec' => $total_billsec,
             'buttons_download' => Auth::user()->buttons_download,
-	        'buttons_listen' => Auth::user()->buttons_listen,
+            'buttons_listen' => Auth::user()->buttons_listen,
             'display_agent_billsec' => $display_agent_billsec,
         ));
     }
@@ -217,7 +215,6 @@ class Cdr_Controller extends Base_Controller
         $clauses = array();
 
         foreach ($filters as $filter) {
-
             preg_match('/X+/', $filter, $match);
             if ($match) {
                 $regex = str_replace($match[0], '[0-9]{' . strlen($match[0]) . '}', $filter);
@@ -234,11 +231,10 @@ class Cdr_Controller extends Base_Controller
             } else {
                 $clauses[] = strlen($filter) >= 7 ? "LIKE '%$filter%'" : "= '$filter'";
             }
-
         }
 
         foreach ($clauses as $key => $clause) {
-            if ($type == 'perm' OR $type == 'src_dst') {
+            if ($type == 'perm' or $type == 'src_dst') {
                 $clauses[$key] = 'src ' . $clause . ' OR ' . 'dst ' . $clause . ' OR ' . 'cnum ' . $clause;
             }
             if ($type == 'src') {
@@ -269,7 +265,9 @@ class Cdr_Controller extends Base_Controller
         $cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $timestamp))->first();
 
         $related_uniqueids = self::get_related_uniqueids($cdr->uniqueid, $cdr->linkedid);
-        if (!$related_uniqueids) $related_uniqueids = array('yok');
+        if (!$related_uniqueids) {
+            $related_uniqueids = array('yok');
+        }
 
         $related_cdrs = self::get_cdrs_by_uniqueids($related_uniqueids);
         $related_cels = self::get_cels_by_uniqueids($related_uniqueids)->get();
@@ -291,7 +289,7 @@ class Cdr_Controller extends Base_Controller
             'per_page_options' => Cdr::$per_page_options,
             'total_billsec' => $total_billsec,
             'buttons_download' => Auth::user()->buttons_download,
-	        'buttons_listen' => Auth::user()->buttons_listen,
+            'buttons_listen' => Auth::user()->buttons_listen,
             'display_agent_billsec' => false,
         ));
     }
