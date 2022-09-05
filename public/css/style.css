@@ -155,3 +155,22 @@ footer {
 .ui-timepicker-rtl{ direction: rtl; }
 .ui-timepicker-rtl dl { text-align: right; }
 .ui-timepicker-rtl dl dd { margin: 0 65px 10px 10px; }
+
+
+.pagination > .disabled{
+    float:left!important; 
+    border:1px solid gray;
+    padding-top: 7px;
+    background:#ddd;
+    width: 60px!important;
+    height:27px!important;
+  }
+
+  .pagination > .current{
+    float:left;
+    padding-left:15px;
+    padding-top:7px;
+    width: 25px!important;
+    height: 27px!important;
+    border:1px solid #ddd;
+  }

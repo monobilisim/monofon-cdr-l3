@@ -44,6 +44,7 @@ Route::group(array('before' => 'auth'), function () {
 
 Route::any('login', 'home@login');
 Route::get('logout', 'home@logout');
+ 
 
 /*
 |--------------------------------------------------------------------------
@@ -124,6 +125,4 @@ Route::filter('auth', function ($role = '') {
             ->with('message', 'Erişim engellendi. Bu sayfaya erişim izniniz yok.')
             ->with('message_status', 'error');
     }
-});
-
-Route::get('deneme', 'user@deneme');
+}); 

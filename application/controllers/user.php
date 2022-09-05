@@ -136,9 +136,10 @@ class User_Controller extends Base_Controller
     {
         $users = DB::table('users')->get();
         $logs = DB::table('user_auth_log')
-        ->join('users', 'user_auth_log.user_id', '=', 'users.id')->get();
+        ->join('users', 'user_auth_log.user_id', '=', 'users.id')->paginate(3);
 
 
+        $this->layout->title = 'Kullanıcı Giriş Logları';
         $this->layout->nest('content', 'user.authlog', array(
             'logs' => $logs,
             'title' => 'Kullanıcı Logları',
