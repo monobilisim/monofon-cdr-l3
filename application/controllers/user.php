@@ -134,15 +134,18 @@ class User_Controller extends Base_Controller
 
     public function get_user_auth_log()
     {
-        $users = DB::table('users')->get();
+        $per_page = 50;
+
         $logs = DB::table('user_auth_log')
-        ->join('users', 'user_auth_log.user_id', '=', 'users.id')->paginate(3);
+            ->join('users', 'user_auth_log.user_id', '=', 'users.id')
+            ->order_by('user_auth_log.id', 'desc')
+            ->paginate($per_page);
 
+        $logs = PaginatorSorter::make($logs->results, $logs->total, $per_page, ['id', 'desc']);
 
-        $this->layout->title = 'Kullanıcı Giriş Logları';
         $this->layout->nest('content', 'user.authlog', array(
             'logs' => $logs,
-            'title' => 'Kullanıcı Logları',
+            'title' => 'Kullanıcı Giriş Logları',
         ));
     }
 }
