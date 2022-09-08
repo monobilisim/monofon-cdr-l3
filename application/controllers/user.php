@@ -141,7 +141,7 @@ class User_Controller extends Base_Controller
             ->order_by('user_auth_log.id', 'desc')
             ->paginate($per_page);
 
-        $logs = PaginatorSorter::make($logs->results, $logs->total, $per_page, ['id', 'desc']);
+        $logs = PaginatorSorter::make($logs->results, $logs->total, $per_page, array('id', 'desc'));
 
         $this->layout->nest('content', 'user.authlog', array(
             'logs' => $logs,
