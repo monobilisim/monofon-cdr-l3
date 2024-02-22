@@ -38,13 +38,14 @@ Route::group(array('before' => 'auth'), function () {
         'home',
         'user',
         'cdr',
-        'tag'
+        'tag',
+        'note',
     ));
 });
 
 Route::any('login', 'home@login');
 Route::get('logout', 'home@logout');
- 
+
 
 /*
 |--------------------------------------------------------------------------
@@ -125,4 +126,4 @@ Route::filter('auth', function ($role = '') {
             ->with('message', 'Erişim engellendi. Bu sayfaya erişim izniniz yok.')
             ->with('message_status', 'error');
     }
-}); 
+});

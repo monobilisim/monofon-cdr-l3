@@ -2,25 +2,6 @@
 
 class Cdr_Controller extends Base_Controller
 {
-    public static function retrieve_file($cdr)
-    {
-        $filefield = Config::get('application.filefield');
-
-        $file = array();
-        if (Config::get('application.date_sorted_monitor') === true) {
-            $file['path'] = date('Y/m/d', strtotime($cdr->calldate));
-        } else {
-            $file['path'] = "";
-        }
-        $file['name'] = basename(preg_replace('/^audio:/', '', $cdr->$filefield));
-        // cdr tablosunda bazı satırlarda filefield sütunu dosya uzantısı içermiyor, eğer öyleyse uzantıyı ekleyelim
-        $ext = Config::get('application.extension');
-        if (preg_match('/\.[a-zA-Z]{3}$/', $file['name']) === 0) {
-            $file['name'] .= ".$ext";
-        }
-        return $file;
-    }
-
     public function before()
     {
         parent::before();
@@ -46,11 +27,13 @@ class Cdr_Controller extends Base_Controller
             'cdr.*',
             'ringgroups.description',
             'users_src.name AS src_name',
-            'users_dst.name AS dst_name'
+            'users_dst.name AS dst_name',
+            'notes.note',
         ))
             ->left_join('asterisk.ringgroups', 'dst', '=', 'asterisk.ringgroups.grpnum')
             ->left_join('asterisk.users AS users_src', 'src', '=', 'users_src.extension')
-            ->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension');
+            ->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension')
+            ->left_join('cdrapp.notes AS notes', 'cdr.uniqueid', '=', 'notes.uniqueid');
         if (Config::get('application.call_tags')) {
             $query->selects[] = 'queue_log.data1 as tag';
             $query->left_join('asteriskrealtime.queue_log', function ($join) {
@@ -101,7 +84,7 @@ class Cdr_Controller extends Base_Controller
             if ($tag == 'null') {
                 $query->where_null('queue_log.data1');
             } else {
-                $query->where('queue_log.data1', '=', $tag.Cdr::$tag_suffix);
+                $query->where('queue_log.data1', '=', $tag . Cdr::$tag_suffix);
             }
         }
 
@@ -129,10 +112,20 @@ class Cdr_Controller extends Base_Controller
         // Apply scope filter
         if (!empty($scope)) {
             if ($scope == 'in') {
-                $wheres[] = "(CHAR_LENGTH(src) < 7 AND CHAR_LENGTH(dst) < 7)";
+                $wheres[] = '(CHAR_LENGTH(src) < 7 AND CHAR_LENGTH(dst) < 7)';
             }
             if ($scope == 'out') {
-                $wheres[] = "(CHAR_LENGTH(src) >= 7 OR CHAR_LENGTH(dst) >= 7)";
+                $wheres[] = '(CHAR_LENGTH(src) >= 7 OR CHAR_LENGTH(dst) >= 7)';
+            }
+        }
+
+        // Apply note filter
+        if (!empty($note)) {
+            if ($note == 'no') {
+                $wheres[] = 'notes.note IS NULL';
+            }
+            if ($note == 'yes') {
+                $wheres[] = 'notes.note IS NOT NULL';
             }
         }
 
@@ -280,6 +273,15 @@ class Cdr_Controller extends Base_Controller
 
         $related_cdrs = PaginatorSorter::make($related_cdrs->results, $related_cdrs->total, $per_page, $default_sort);
 
+        $note = '';
+        if (Config::get('application.note')) {
+            Config::set('database.default', 'mysql');
+            $note = Note::where('uniqueid', '=', $cdr->uniqueid)->first();
+            if ($note) {
+                $note = $note->note;
+            }
+        }
+
         $this->layout->nest('content', 'cdr.view', array(
             'cdr' => $cdr,
             'cdrs' => $related_cdrs,
@@ -291,6 +293,7 @@ class Cdr_Controller extends Base_Controller
             'buttons_download' => Auth::user()->buttons_download,
             'buttons_listen' => Auth::user()->buttons_listen,
             'display_agent_billsec' => false,
+            'note' => $note,
         ));
     }
 
@@ -411,7 +414,7 @@ class Cdr_Controller extends Base_Controller
     private static function get_cdrs_by_uniqueids($uniqueids)
     {
         $query = self::getCdrQuery();
-        $query->where_in('uniqueid', $uniqueids);
+        $query->where_in('cdr.uniqueid', $uniqueids);
         return $query;
     }
 
@@ -433,8 +436,6 @@ class Cdr_Controller extends Base_Controller
 
     public function action_listen($uniqueid, $calldate)
     {
-        $cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $calldate))->first();
-
         $html = <<<HTML
             <div id="waveform-progress-wrapper">
                 <div id="waveform-progress" class="progress progress-striped active"><div class="bar" style="width: 0%;"></div></div>
@@ -580,5 +581,24 @@ HTML;
                 return Response::download($abs_path, $file['name']);
             }
         }
+    }
+
+    public static function retrieve_file($cdr)
+    {
+        $filefield = Config::get('application.filefield');
+
+        $file = array();
+        if (Config::get('application.date_sorted_monitor') === true) {
+            $file['path'] = date('Y/m/d', strtotime($cdr->calldate));
+        } else {
+            $file['path'] = "";
+        }
+        $file['name'] = basename(preg_replace('/^audio:/', '', $cdr->$filefield));
+        // cdr tablosunda bazı satırlarda filefield sütunu dosya uzantısı içermiyor, eğer öyleyse uzantıyı ekleyelim
+        $ext = Config::get('application.extension');
+        if (preg_match('/\.[a-zA-Z]{3}$/', $file['name']) === 0) {
+            $file['name'] .= ".$ext";
+        }
+        return $file;
     }
 }

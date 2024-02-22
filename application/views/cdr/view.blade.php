@@ -41,6 +41,14 @@
         </tr>
     </table>
 
+    @if ($note)
+    <p>
+        <strong>Not:</strong>
+        <br>
+        {{ nl2br($note) }}
+    </p>
+    @endif
+
     <div class="accordion" id="details">
         <div class="accordion-group">
             <div class="accordion-heading">
@@ -93,4 +101,3 @@
     </div>
 
 @endsection
-

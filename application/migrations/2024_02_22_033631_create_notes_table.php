@@ -1,6 +1,6 @@
 <?php
 
-class User_Auth_Log
+class Create_Notes_Table
 {
     /**
      * Make changes to the database.
@@ -9,11 +9,13 @@ class User_Auth_Log
      */
     public function up()
     {
-        Schema::create('user_auth_log', function ($table) {
+        Schema::create('notes', function ($table) {
             $table->increments('id');
-            $table->integer('user_id');
-            $table->date('timestamp');
-            $table->string('action', 3);
+            $table->string('uniqueid')->unique();
+            $table->text('note');
+            $table->integer('created_by');
+            $table->integer('updated_by')->nullable();
+            $table->timestamps();
         });
     }
 
@@ -26,4 +28,5 @@ class User_Auth_Log
     {
         //
     }
+
 }

@@ -7,38 +7,32 @@ class Cdr extends Eloquent
 
     public static function format_billsec($t)
     {
-        if ($t >= 3600)
-            return sprintf("%02d%s%02d%s%02d", floor($t/3600), ':', ($t/60)%60, ':', $t%60);
-        else
-            return sprintf("%02d%s%02d", ($t/60)%60, ':', $t%60);
+        if ($t >= 3600) {
+            return sprintf("%02d%s%02d%s%02d", floor($t / 3600), ':', ($t / 60) % 60, ':', $t % 60);
+        } else {
+            return sprintf("%02d%s%02d", ($t / 60) % 60, ':', $t % 60);
+        }
     }
 
-	public static function format_agent_billsec($t)
-	{
-	if (!$t) {
-		return '';
-	}
+    public static function format_agent_billsec($t)
+    {
+        if (!$t) {
+            return '';
+        }
 
-	return self::format_billsec($t);
-	}
+        return self::format_billsec($t);
+    }
 
     public static function format_src_dst($cdr, $type)
     {
         $name = $type . '_name';
-        if ($cdr->$name)
-        {
+        if ($cdr->$name) {
             return $cdr->$name . ' (' . $cdr->$type . ')';
-        }
-        elseif ($type == 'dst' AND $cdr->description)
-        {
+        } elseif ($type == 'dst' and $cdr->description) {
             return $cdr->description . ' (' . $cdr->$type . ')';
-        }
-        elseif ($type == 'src' AND $cdr->$type == '153')
-        {
+        } elseif ($type == 'src' and $cdr->$type == '153') {
             return $cdr->cnam . ' (' . $cdr->cnum . ')';
-        }
-        else
-        {
+        } else {
             return $cdr->$type;
         }
     }
@@ -51,16 +45,14 @@ class Cdr extends Eloquent
 
     public static function get_options($name)
     {
-        if ($name == 'did')
-        {
+        if ($name == 'did') {
             $rows = DB::table('cdr')->select('did')->distinct()->get();
             foreach ($rows as $row) {
                 $options[$row->did] = $row->did;
             }
         }
 
-        if ($name == 'ringgroup')
-        {
+        if ($name == 'ringgroup') {
             $options = array('' => '');
             $ringgroups = DB::table('asterisk.ringgroups')->get();
             foreach ($ringgroups as $rg) {
@@ -68,8 +60,7 @@ class Cdr extends Eloquent
             }
         }
 
-        if ($name == 'status')
-        {
+        if ($name == 'status') {
             $options = array(
                 '' => '',
                 'ANSWERED'   => __('misc.answered'),
@@ -79,21 +70,7 @@ class Cdr extends Eloquent
             );
         }
 
-        if ($name == 'scope')
-        {
-            $calldir = Input::get('calldir');
-            $in = 'İçi';
-            $out = 'Dışı';
-            if ($calldir == 'in')
-            {
-                $in = 'İçinden';
-                $out = 'Dışından';
-            }
-            if ($calldir == 'out')
-            {
-                $in = 'İçine';
-                $out = 'Dışına';
-            }
+        if ($name == 'scope') {
             $options = array(
                 '' => '',
                 'in' => 'Dahili Aramalar',
@@ -101,8 +78,7 @@ class Cdr extends Eloquent
             );
         }
 
-        if ($name == 'tag' || $name == 'tag_update')
-        {
+        if ($name == 'tag' || $name == 'tag_update') {
             static $call_tags = null;
             if ($call_tags === null) {
                 $tagQueueCalls = parse_ini_file('/var/www/html/fop2/admin/plugins/tagQueueCalls/tagQueueCalls.ini');
@@ -112,8 +88,7 @@ class Cdr extends Eloquent
             if ($name != 'tag_update') {
                 $options['null'] = '-- BOŞ --';
             }
-            foreach ($call_tags as $call_tag)
-            {
+            foreach ($call_tags as $call_tag) {
                 $options[$call_tag] = $call_tag;
             }
         }
@@ -124,6 +99,12 @@ class Cdr extends Eloquent
             foreach ($users as $user) {
                 $options[$user->name] = $user->name;
             }
+        } elseif ($name == 'note') {
+            $options = array(
+                    '' => '',
+                    'yes'   => 'Not eklenmiş',
+                    'no'  => 'Not eklenmemiş',
+            );
         }
 
         return $options;
@@ -158,8 +139,7 @@ class Cdr extends Eloquent
         $url_parts = parse_url($url);
         if (isset($url_parts['query'])) {
             $url .= '&export';
-        }
-        else {
+        } else {
             $url .= '?export';
         }
         return $url;
@@ -169,5 +149,4 @@ class Cdr extends Eloquent
     {
         return path('storage') . 'tmp';
     }
-
 }

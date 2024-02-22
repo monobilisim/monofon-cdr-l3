@@ -187,10 +187,11 @@ return array(
 	'extension'		=> 'WAV',
 	'did'			=> false,
 	'clid'			=> false,
-	'dstchannel'		=> false,
-	'accountcode'		=> false,
+	'dstchannel'	=> false,
+	'accountcode'	=> false,
+	'agent_billsec'	=> false,
+	'call_tags'		=> false,
+	'note'			=> false,
 	'remote_base_url' => false, // Ses dosyaları Minio vb. bir yerde tutuluyorsa "http://10.10.10.10:9000" biçiminde URL
-	'agent_billsec' => false,
-	'call_tags' => false,
 
 );

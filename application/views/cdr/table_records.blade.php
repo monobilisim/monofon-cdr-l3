@@ -26,6 +26,9 @@
         @if ($buttons_download || $buttons_listen)
         <th style="width: 75px">Ses Kaydı</th>
         @endif
+        @if (Config::get('application.note'))
+        <th>Not</th>
+        @endif
     </thead>
     <tbody>
 
@@ -33,7 +36,7 @@
         @foreach ($cdrs->results as $cdr)
 
         <tr>
-            <td><a class="cdr-link" href="{{ URL::to('cdr/view/'.$cdr->uniqueid.'/'.strtotime($cdr->calldate)) }}">{{ date('d.m.Y', strtotime($cdr->calldate)) . ' - ' . date('H:i:s', strtotime($cdr->calldate)) }}</a>
+            <td><a class="cdr-link" href="{{ URL::to('cdr/view/'.$cdr->uniqueid.'/'.strtotime($cdr->calldate)) }}">{{ date('d.m.Y - H:i:s', strtotime($cdr->calldate)) }}</a>
             </td>
             @if (Config::get('application.did'))
             <td>{{ $cdr->did }}</td>
@@ -67,12 +70,12 @@
             <td>{{ __("misc.$cdr->disposition") }}</td>
             <td>{{ Cdr::format_billsec($cdr->billsec) }}</td>
             @if ($display_agent_billsec)
-            @if ($cdr->billsec <= $cdr->agent_billsec)
+                @if ($cdr->billsec <= $cdr->agent_billsec)
                 {{ $cdr->agent_billsec = null }}
                 @endif
                 <td>{{ Cdr::format_agent_billsec($cdr->agent_billsec) }}</td>
-                @endif
-                @if ($buttons_download || $buttons_listen)
+            @endif
+            @if ($buttons_download || $buttons_listen)
                 <td class="buttons">
                     @if ($cdr->$filefield)
                     {{ Form::hidden('uniqueid', $cdr->uniqueid) }}
@@ -85,8 +88,22 @@
                     @endif
                     @endif
                 </td>
+                @if (Config::get('application.note'))
+                    <?php
+                    $note = $cdr->note;
+                    $note_add_button_class = ($note) ? ' hide' : '';
+                    $note_edit_button_class = ($note) ? '' : ' hide';
+                    $uniqueid_class = str_replace('.', '_', $cdr->uniqueid);
+                    ?>
+                    <td class="note_{{ $uniqueid_class }}">
+                    {{ Form::hidden('uniqueid', $cdr->uniqueid) }}
+                    {{ Form::hidden('cdr_info', $cdr->src . ' → ' . $cdr->dst . ' (' . date('d.m.Y - H:i:s', strtotime($cdr->calldate)) . ')') }}
+                        <a class="btn btn-mini btn-note note-edit-button{{ $note_edit_button_class }}" data-toggle="modal" href="#note-modal">Düzenle</a>
+                        <a class="btn btn-mini btn-note note-add-button{{ $note_add_button_class }}" data-toggle="modal" href="#note-modal">Ekle</a>
+                    </td>
+                @endif
+            @endif
         </tr>
-        @endif
 
 
         @endforeach
@@ -100,17 +117,3 @@
 
     </tbody>
 </table>
-
-<!-- Modal window -->
-<div class="modal fade" id="listen">
-    <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal">×</button>
-        <h3>Ses Kaydı</h3>
-    </div>
-    <div class="modal-body">
-        <p><span class="spinner"></span></p>
-    </div>
-    <div class="modal-footer">
-        <a href="#" class="btn" data-dismiss="modal">Kapat</a>
-    </div>
-</div>

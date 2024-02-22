@@ -59,7 +59,7 @@ class Home_Controller extends Base_Controller
             $insert = DB::table('user_auth_log')->insert(array(
                 'user_id'=>Auth::user()->id,
                 'timestamp'=>date('Y-m-d H:i:s'),
-                'auth_type'=>'IN'
+                'action'=>'in'
             ));
             $dir = Cdr::getTemporaryOggDir();
             foreach (glob($dir . '/*') as $file) {
@@ -82,10 +82,10 @@ class Home_Controller extends Base_Controller
     public function get_logout()
     {
         Auth::logout();
-        $insert = DB::table('user_auth_log')->insert(array(
+        DB::table('user_auth_log')->insert(array(
            'user_id'=>Auth::user()->id,
            'timestamp'=>date('Y-m-d H:i:s'),
-           'auth_type'=>'OUT'
+           'action'=>'out'
         ));
         return Redirect::to('login')
             ->with('message', 'Çıkış yapıldı.')

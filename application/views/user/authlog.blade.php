@@ -11,7 +11,7 @@
     @foreach ($logs->results as $row)
         <tr>
             <td>{{$row->username}}</td>
-            <td>{{$row->auth_type == 'IN' ? 'Giriş' : 'Çıkış'}}</td>
+            <td>{{$row->action == 'in' ? 'Giriş' : 'Çıkış'}}</td>
             <td>{{date('m-d-Y H:i:s',strtotime($row->timestamp))}}</td>
         </tr>
      @endforeach
