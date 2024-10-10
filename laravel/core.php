@@ -201,7 +201,13 @@ if (isset($environment))
 
 if (defined('STDIN'))
 {
-	require path('sys').'cli/command'.EXT; // php5.3 için
+	// php5.3 için
+	require path('sys').'cli/command'.EXT;
+	require path('sys').'cli/tasks/migrate/database'.EXT;
+	require path('sys').'cli/tasks/migrate/resolver'.EXT;
+	require path('sys').'cli/tasks/task'.EXT;
+	require path('sys').'cli/tasks/migrate/migrator'.EXT;
+
 	$console = CLI\Command::options($_SERVER['argv']);
 
 	list($arguments, $options) = $console;
