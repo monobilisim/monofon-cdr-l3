@@ -412,14 +412,16 @@ function ends_with($haystack, $needle)
  * @param  string|array  $needle
  * @return bool
  */
-function str_contains($haystack, $needle)
-{
-	foreach ((array) $needle as $n)
+if (!function_exists('str_contains')) {
+	function str_contains($haystack, $needle)
 	{
-		if (strpos($haystack, $n) !== false) return true;
-	}
+		foreach ((array) $needle as $n)
+		{
+			if (strpos($haystack, $n) !== false) return true;
+		}
 
-	return false;
+		return false;
+	}
 }
 
 /**

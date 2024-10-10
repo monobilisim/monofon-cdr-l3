@@ -201,6 +201,7 @@ if (isset($environment))
 
 if (defined('STDIN'))
 {
+	require path('sys').'cli/command'.EXT; // php5.3 için
 	$console = CLI\Command::options($_SERVER['argv']);
 
 	list($arguments, $options) = $console;
