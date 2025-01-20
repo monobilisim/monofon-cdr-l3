@@ -159,3 +159,11 @@ footer {
 .ui-timepicker-rtl{ direction: rtl; }
 .ui-timepicker-rtl dl { text-align: right; }
 .ui-timepicker-rtl dl dd { margin: 0 65px 10px 10px; }
+
+.export-xlsx {
+	background: url('../img/icons8-export-excel-48.png') no-repeat center;
+	background-size: contain;
+	float: right;
+	width: 24px;
+	height: 24px;
+}

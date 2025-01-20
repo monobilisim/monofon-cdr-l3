@@ -30,7 +30,8 @@
     @foreach ($cdrs->results as $cdr)
 
         <tr>
-            <td><a class="cdr-link"
+            <td>
+                <a class="cdr-link"
                    href="{{ URL::to('cdr/view/'.$cdr->uniqueid.'/'.strtotime($cdr->calldate)) }}">{{ date('d.m.Y', strtotime($cdr->calldate)) . ' - ' . date('H:i:s', strtotime($cdr->calldate)) }}</a>
             </td>
             @if (Config::get('application.clid'))
@@ -55,21 +56,20 @@
                 <td>{{ Cdr::format_agent_billsec($cdr->agent_billsec) }}</td>
             @endif
             @if ($buttons_download || $buttons_listen)
-      		<td class="buttons">
+      		    <td class="buttons">
         	    @if ($cdr->$filefield)
-          	    {{ Form::hidden('uniqueid', $cdr->uniqueid) }}
-          	    {{ Form::hidden('calldate', strtotime($cdr->calldate)) }}
-          	    @if ($buttons_listen)
-            	      <a class="btn btn-mini btn-listen" data-toggle="modal" href="#listen">Dinle</a>
-	            @endif
-          	    @if ($buttons_download)
-            	      <a class="btn btn-mini" href="{{ URL::to('cdr/download/'.$cdr->uniqueid.'/'.strtotime($cdr->calldate)) }}">İndir</a>
-          	    @endif
-
+                    {{ Form::hidden('uniqueid', $cdr->uniqueid) }}
+                    {{ Form::hidden('calldate', strtotime($cdr->calldate)) }}
+                    @if ($buttons_listen)
+                        <a class="btn btn-mini btn-listen" data-toggle="modal" href="#listen">Dinle</a>
                     @endif
+                    @if ($buttons_download)
+                        <a class="btn btn-mini" href="{{ URL::to('cdr/download/'.$cdr->uniqueid.'/'.strtotime($cdr->calldate)) }}">İndir</a>
+                    @endif
+                @endif
                 </td>
+            @endif
         </tr>
-        @endif
 
     @endforeach
 

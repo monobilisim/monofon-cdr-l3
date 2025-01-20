@@ -7,14 +7,15 @@ class Crypter {
 	 *
 	 * @var string
 	 */
-	public static $cipher = MCRYPT_RIJNDAEL_256;
+	//public static $cipher = MCRYPT_RIJNDAEL_256;
+	public static $cipher = 'aes-256-cbc';
 
 	/**
 	 * The encryption mode.
 	 *
 	 * @var string
 	 */
-	public static $mode = MCRYPT_MODE_CBC;
+	//public static $mode = MCRYPT_MODE_CBC;
 
 	/**
 	 * The block size of the cipher.
@@ -33,6 +34,7 @@ class Crypter {
 	 */
 	public static function encrypt($value)
 	{
+		/*
 		$iv = mcrypt_create_iv(static::iv_size(), static::randomizer());
 
 		$value = static::pad($value);
@@ -40,6 +42,14 @@ class Crypter {
 		$value = mcrypt_encrypt(static::$cipher, static::key(), $value, static::$mode, $iv);
 
 		return base64_encode($iv.$value);
+		*/
+
+		$iv_size = openssl_cipher_iv_length(static::$cipher);
+		$iv = openssl_random_pseudo_bytes($iv_size); // Generate a secure random I
+		$value = static::pad($value); // Add padding if necessary
+		$encrypted = openssl_encrypt($value, static::$cipher, static::key(), OPENSSL_RAW_DATA, $iv);
+
+		return base64_encode($iv . $encrypted);
 	}
 
 	/**
@@ -50,6 +60,7 @@ class Crypter {
 	 */
 	public static function decrypt($value)
 	{
+		/*
 		$value = base64_decode($value);
 
 		// To decrypt the value, we first need to extract the input vector and
@@ -67,6 +78,22 @@ class Crypter {
 		$value = mcrypt_decrypt(static::$cipher, $key, $value, static::$mode, $iv);
 
 		return static::unpad($value);
+		*/
+
+		$iv_size = openssl_cipher_iv_length(static::$cipher);
+
+		// Decode the base64-encoded string
+		$decoded = base64_decode($value);
+
+		// Extract the IV and encrypted data
+		$iv = substr($decoded, 0, $iv_size);
+		$encrypted = substr($decoded, $iv_size);
+
+		// Decrypt the data
+		$decrypted = openssl_decrypt($encrypted, static::$cipher, static::key(), OPENSSL_RAW_DATA, $iv);
+
+		// If padding was added manually in encryption, remove it here
+		return static::unpad($decrypted);
 	}
 
 	/**

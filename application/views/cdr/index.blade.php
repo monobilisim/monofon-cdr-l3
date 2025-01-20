@@ -1,6 +1,9 @@
 @section('content')
 
     {{ Form::open(URL::current(), 'GET', array('class' => 'well form-filter clearfix')) }}
+
+    <a href="{{ URL::full() }}&export" class="export-xlsx"></a>
+
     <div class="item">
         <label>Tarih - Saat Aralığı</label>
         {{ Form::text('datestart', Input::get('datestart', date('d.m.Y - 00:00')), array('class' => 'input-date datetimepicker')) }}
@@ -93,6 +96,7 @@
         @include('cdr.table_records')
 
         {{ $cdrs->links() }}
+
         <div id="per-page-container">
             {{ Form::select('per_page', $per_page_options, Input::get('per_page', 10), array('id' => 'per-page', 'class' => 'input-mini')) }}
             / sayfa

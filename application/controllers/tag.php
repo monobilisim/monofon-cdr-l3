@@ -5,7 +5,7 @@ class Tag_Controller extends Base_Controller
     public function before()
     {
         parent::before();
-        
+
         // js
         Asset::add('jquery-ui', 'jquery-ui/jquery-ui-1.9.1.custom.min.js');
         Asset::add('jquery-ui-tr', 'jquery-ui/jquery.ui.datetimepicker-tr.js');
@@ -14,12 +14,12 @@ class Tag_Controller extends Base_Controller
 
         // css
         Asset::add('jquery-ui', 'jquery-ui/smoothness/jquery-ui-1.9.1.custom.min.css');
-        
+
         Config::set('database.default', 'asterisk');
     }
-    
+
     private static $title = 'Etiket Raporu';
-    
+
     private static $columns = array(
         'datetime' => 'Tarih ve Saat',
         'queue' => 'Kuyruk',
@@ -30,7 +30,7 @@ class Tag_Controller extends Base_Controller
         'position' => 'position',
         'info5' => 'Etiket',
     );
-    
+
     public static function getValue($row, $column)
     {
         $value = $row->$column;
@@ -40,17 +40,17 @@ class Tag_Controller extends Base_Controller
         }
         return $value;
     }
-    
+
     public function action_index()
     {
         $datestart = Cdr::format_datetime_input(Input::get('datestart', date('Y-m-d 00:00')));
         $dateend = Cdr::format_datetime_input(Input::get('dateend', date('Y-m-d 23:59')));
-        
+
         $query = DB::table('qstats.queue_stats_mv')
             ->where('event', '=', 'COMPLETECALLER');
-        
+
         $query->raw_where("datetime BETWEEN '$datestart' AND '$dateend'");
-        
+
         // temsilci bazında toplamlar
         $q = clone $query;
         $q->select(array(
@@ -61,16 +61,16 @@ class Tag_Controller extends Base_Controller
         $q->group_by('agent');
         $q->order_by('agent');
         $agent_totals = $q->get();
-        
+
         $query->select(array(
             'queue_stats_mv.*',
         ));
-        
+
         $agent = Input::get('agent');
         if ($agent) {
             $query->where('agent', '=', $agent);
         }
-        
+
         $tag = Input::get('tag');
         if ($tag) {
             if ($tag == 'null') {
@@ -80,7 +80,7 @@ class Tag_Controller extends Base_Controller
                 $query->where('info5', '=', $tag);
             }
         }
-        
+
         $q = clone $query;
         $total_tagged = $q->where('info5', '!=', '')->count();
 
@@ -91,16 +91,16 @@ class Tag_Controller extends Base_Controller
         $sort = Input::get('sort', $default_sort['sort']);
         $dir = Input::get('dir', $default_sort['dir']);
         $query->order_by($sort, $dir);
-        
+
         if (isset($_GET['export'])) {
             return self::export_to_excel($query);
         }
-        
+
         $per_page = Input::get('per_page', 10);
         $query = $query->paginate($per_page);
 
         $query = PaginatorSorter::make($query->results, $query->total, $per_page, $default_sort);
-        
+
         $this->layout->nest('content', 'tag.index', array(
             'title' => self::$title,
             'query' => $query,
@@ -111,21 +111,21 @@ class Tag_Controller extends Base_Controller
             'helper' => $this,
         ));
     }
-    
+
     private static function export_to_excel($query)
     {
-        require 'libraries/PHP_XLSXWriter/xlsxwriter.class.php';
-        
+        require 'libraries/xlsxwriter.class.php';
+
         $rows = $query->get();
-        
+
         $data = array();
-        
+
         $title_row = array();
         foreach (self::$columns as $column => $column_title) {
             $title_row[] = $column_title;
         }
         $data[] = $title_row;
-        
+
         foreach ($rows as $row) {
             $data_row = array();
             foreach (self::$columns as $column => $column_title) {
@@ -136,9 +136,9 @@ class Tag_Controller extends Base_Controller
 
         $writer = new XLSXWriter();
         $writer->writeSheet($data);
-        
+
         $filename = self::$title . '.xlsx';
-        
+
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $filename);
         $writer->writeToStdOut();

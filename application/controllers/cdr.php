@@ -136,6 +136,11 @@ class Cdr_Controller extends Base_Controller
         $total_billsec = $query->sum('billsec');
 
         $query->order_by($sort, $dir);
+
+        if (isset($export)) {
+            self::export_to_excel($query);
+        }
+
         $query = $query->paginate($per_page);
 
         $cdrs = PaginatorSorter::make($query->results, $query->total, $per_page, $default_sort);
@@ -600,5 +605,69 @@ HTML;
             $file['name'] .= ".$ext";
         }
         return $file;
+    }
+
+    private static function export_to_excel($query)
+    {
+        require 'libraries/xlsxwriter.class.php';
+
+        $columns = array(
+            'calldate' => 'Tarih - Saat',
+            'did' => 'DID',
+            'clid' => 'Arayan Tanımı',
+            'src' => 'Arayan',
+            'dst' => 'Aranan',
+            'dstchannel' => 'Aranan Kanal',
+            'server' => 'Hesap Kodu',
+            'disposition' => 'Durum',
+            'billsec' => 'Süre',
+        );
+
+        $config_cols = array('did', 'clid', 'dstchannel', 'accountcode');
+        foreach ($config_cols as $col) {
+            if (!Config::get("application.$col")) {
+                unset($columns[$col]);
+            }
+        }
+        if (!Config::get('application.accountcode')) {
+            unset($columns['server']);
+        }
+
+        $cdrs = $query->get();
+
+        $data = array();
+
+        $title_row = array();
+        foreach ($columns as $column_title) {
+            $title_row[] = $column_title;
+        }
+        $data[] = $title_row;
+
+        foreach ($cdrs as $cdr) {
+            $data_row = array();
+            foreach ($columns as $column => $column_title) {
+                if (in_array($column, array('src', 'dst'))) {
+                    $value = Cdr::format_src_dst($cdr, $column);
+                } else if ($column == 'disposition') {
+                    $value = __("misc.$cdr->disposition");
+                } else if ($column == 'billsec') {
+                    $value = Cdr::format_billsec($cdr->billsec);
+                } else {
+                    $value = $cdr->$column;
+                }
+                $data_row[] = $value;
+            }
+            $data[] = $data_row;
+        }
+
+        $writer = new XLSXWriter();
+        $writer->writeSheet($data);
+
+        $filename = 'Çağrı Kayıtları.xlsx';
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename);
+        $writer->writeToStdOut();
+        exit;
     }
 }
