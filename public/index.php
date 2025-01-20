@@ -14,6 +14,13 @@
 // --------------------------------------------------------------
 define('LARAVEL_START', microtime(true));
 
+if (!defined('OPENSSL_RAW_DATA')) {
+    define('OPENSSL_RAW_DATA', true);
+}
+if (!defined('ENT_SUBSTITUTE')) {
+    define('ENT_SUBSTITUTE', 8);
+}
+
 // --------------------------------------------------------------
 // Indicate that the request is from the web.
 // --------------------------------------------------------------
