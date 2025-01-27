@@ -1001,7 +1001,11 @@ class Request
             return in_array(strtolower($proto), array('https', 'on', '1'));
         }
 
-        return 'on' == strtolower($this->server->get('HTTPS')) || 1 == $this->server->get('HTTPS');
+        if (PHP_MAJOR_VERSION >= 8) {
+            return 'on' == strtolower($this->server->get('HTTPS') ?? '') || 1 == $this->server->get('HTTPS');
+        } else {
+            return 'on' == strtolower($this->server->get('HTTPS')) || 1 == $this->server->get('HTTPS');
+        }
     }
 
     /**

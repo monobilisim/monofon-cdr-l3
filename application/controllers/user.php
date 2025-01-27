@@ -26,12 +26,16 @@ class User_Controller extends Base_Controller
         $dir = Input::get('dir', $default_sort['dir']);
         $username = Input::get('username');
 
-        $users = DB::table('users')->where('username', '!=', 'mono')->order_by($sort, $dir);
-        if ($username) {
-            $users->where('username', 'LIKE', "%$username%");
+        $query = DB::table('users');
+        if (Auth::user()->id != 1) {
+            $query->where('id', '!=', 1);
         }
-        $users = $users->paginate($per_page);
-        $users = PaginatorSorter::make($users->results, $users->total, $per_page, $default_sort);
+        $query->order_by($sort, $dir);
+        if ($username) {
+            $query->where('username', 'LIKE', "%$username%");
+        }
+        $query = $query->paginate($per_page);
+        $users = PaginatorSorter::make($query->results, $query->total, $per_page, $default_sort);
         $this->layout->nest('content', 'user.index', array(
             'users' => $users,
             'roles' => $this->roles,

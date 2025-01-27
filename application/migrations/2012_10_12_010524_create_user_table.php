@@ -15,20 +15,21 @@ class Create_User_Table {
 			$table->string('username', 50)->unique;
 			$table->string('password', 60);
 			$table->string('role', 10);
-			$table->string('perm', 50);
+			$table->string('perm', 50)->nullable();
 			$table->timestamps();
 		});
 
-		DB::table('users')->insert(array(
-			'username' => 'mono',
-			'password' => '$2a$08$2TEPv3PL6x8q9lg0weE9EuYx4iuc5MhDm6nEupnm2KfPdO/LxMYMW',
-			'role' => 'admin',
-		));
-		DB::table('users')->insert(array(
-			'username' => 'admin',
-			'password' => Hash::make('admin'),
-			'role' => 'admin',
-		));
+		$user = new User;
+		$user->username = 'mono';
+		$user->password = Hash::make('mono');
+		$user->role = 'admin';
+		$user->save();
+
+		$user = new User;
+		$user->username = 'admin';
+		$user->password = Hash::make('admin');
+		$user->role = 'admin';
+		$user->save();
 	}
 
 	/**
