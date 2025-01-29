@@ -649,7 +649,7 @@ HTML;
                 if (in_array($column, array('src', 'dst'))) {
                     $value = Cdr::format_src_dst($cdr, $column);
                 } else if ($column == 'disposition') {
-                    $value = __("misc.$cdr->disposition");
+                    $value = Lang::line("misc.$cdr->disposition")->get();
                 } else if ($column == 'billsec') {
                     $value = Cdr::format_billsec($cdr->billsec);
                 } else {
