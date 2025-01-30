@@ -2,7 +2,7 @@
 
     {{ Form::open(URL::current(), 'GET', array('class' => 'well form-filter clearfix')) }}
 
-    <a href="{{ URL::full() }}&export" class="export-xlsx"></a>
+    <a href="{{ Cdr::export_url() }}" class="export-xlsx"></a>
 
     <div class="item">
         <label>Tarih - Saat Aralığı</label>
