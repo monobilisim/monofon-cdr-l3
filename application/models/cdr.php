@@ -30,8 +30,6 @@ class Cdr extends Eloquent
             return $cdr->$name . ' (' . $cdr->$type . ')';
         } elseif ($type == 'dst' and $cdr->description) {
             return $cdr->description . ' (' . $cdr->$type . ')';
-        } elseif ($type == 'src' and $cdr->$type == '153') {
-            return $cdr->cnam . ' (' . $cdr->cnum . ')';
         } else {
             return $cdr->$type;
         }

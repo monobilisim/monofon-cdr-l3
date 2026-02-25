@@ -26,12 +26,12 @@ class Cdr_Controller extends Base_Controller
         $query = DB::table('cdr')->select(array(
             'cdr.*',
             'ringgroups.description',
-            'users_src.name AS src_name',
+            'users_src.name AS cnum_name',
             'users_dst.name AS dst_name',
             'notes.note',
         ))
             ->left_join('asterisk.ringgroups', 'dst', '=', 'asterisk.ringgroups.grpnum')
-            ->left_join('asterisk.users AS users_src', 'src', '=', 'users_src.extension')
+            ->left_join('asterisk.users AS users_src', 'cnum', '=', 'users_src.extension')
             ->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension')
             ->left_join('cdrapp.notes AS notes', 'cdr.uniqueid', '=', 'notes.uniqueid');
         if (Config::get('application.call_tags')) {
@@ -112,10 +112,10 @@ class Cdr_Controller extends Base_Controller
         // Apply scope filter
         if (!empty($scope)) {
             if ($scope == 'in') {
-                $wheres[] = '(CHAR_LENGTH(src) < 7 AND CHAR_LENGTH(dst) < 7)';
+                $wheres[] = '(CHAR_LENGTH(cnum) < 7 AND CHAR_LENGTH(dst) < 7)';
             }
             if ($scope == 'out') {
-                $wheres[] = '(CHAR_LENGTH(src) >= 7 OR CHAR_LENGTH(dst) >= 7)';
+                $wheres[] = '(CHAR_LENGTH(cnum) >= 7 OR CHAR_LENGTH(dst) >= 7)';
             }
         }
 
@@ -233,10 +233,10 @@ class Cdr_Controller extends Base_Controller
 
         foreach ($clauses as $key => $clause) {
             if ($type == 'perm' or $type == 'src_dst') {
-                $clauses[$key] = 'src ' . $clause . ' OR ' . 'dst ' . $clause . ' OR ' . 'cnum ' . $clause;
+                $clauses[$key] = 'cnum ' . $clause . ' OR ' . 'dst ' . $clause;
             }
             if ($type == 'src') {
-                $clauses[$key] = 'src ' . $clause . ' OR ' . 'cnum ' . $clause;
+                $clauses[$key] = 'cnum ' . $clause;
             }
             if ($type == 'dst') {
                 $clauses[$key] = 'dst ' . $clause;
@@ -615,7 +615,7 @@ HTML;
             'calldate' => 'Tarih - Saat',
             'did' => 'DID',
             'clid' => 'Arayan Tanımı',
-            'src' => 'Arayan',
+            'cnum' => 'Arayan',
             'dst' => 'Aranan',
             'dstchannel' => 'Aranan Kanal',
             'server' => 'Hesap Kodu',
@@ -646,7 +646,7 @@ HTML;
         foreach ($cdrs as $cdr) {
             $data_row = array();
             foreach ($columns as $column => $column_title) {
-                if (in_array($column, array('src', 'dst'))) {
+                if (in_array($column, array('cnum', 'dst'))) {
                     $value = Cdr::format_src_dst($cdr, $column);
                 } else if ($column == 'disposition') {
                     $value = Lang::line("misc.$cdr->disposition")->get();
