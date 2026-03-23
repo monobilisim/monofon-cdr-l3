@@ -23,8 +23,8 @@ class Cdr_Controller extends Base_Controller
 
     private static function getCdrQuery()
     {
-        $query = DB::table('cdr')->select(array(
-            'cdr.*',
+        $query = DB::table('v_cdr')->select(array(
+            'v_cdr.*',
             'ringgroups.description',
             'users_src.name AS cnum_name',
             'users_dst.name AS dst_name',
@@ -33,7 +33,7 @@ class Cdr_Controller extends Base_Controller
             ->left_join('asterisk.ringgroups', 'dst', '=', 'asterisk.ringgroups.grpnum')
             ->left_join('asterisk.users AS users_src', 'cnum', '=', 'users_src.extension')
             ->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension')
-            ->left_join('cdrapp.notes AS notes', 'cdr.uniqueid', '=', 'notes.uniqueid');
+            ->left_join('cdrapp.notes AS notes', 'v_cdr.uniqueid', '=', 'notes.uniqueid');
         if (Config::get('application.call_tags')) {
             $query->selects[] = 'queue_log.data1 as tag';
             $query->left_join('asteriskrealtime.queue_log', function ($join) {
