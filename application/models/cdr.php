@@ -2,7 +2,7 @@
 
 class Cdr extends Eloquent
 {
-    public static $table = 'cdr';
+    public static $table = 'v_cdr';
     public static $key = 'uniqueid';
 
     public static function format_billsec($t)

@@ -47,9 +47,9 @@
             @else
             <td>{{ $cdr->cnam }} ({{ $cdr->cnum }})</td>
             @endif
-            <td>{{ $cdr->cnum }}</td>
+            <td>{{ $cdr->src }}</td>
             @else
-            <td>{{ Cdr::format_src_dst($cdr, 'cnum') }}</td>
+            <td>{{ Cdr::format_src_dst($cdr, 'src') }}</td>
             @endif
             <td>{{ Cdr::format_src_dst($cdr, 'dst') }}</td>
             @if (Config::get('application.dstchannel'))

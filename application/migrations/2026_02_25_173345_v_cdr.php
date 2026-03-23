@@ -24,7 +24,8 @@ class V_Cdr {
                 duration,
                 billsec,
                 disposition,
-                recordingfile
+                recordingfile,
+                linkedid
             FROM cdr;
 
         */
