@@ -135,20 +135,26 @@ class Cdr_Controller extends Base_Controller
 
         $total_billsec = $query->sum('billsec');
 
+        // paginate() ve sum() GROUP BY ile doğru çalışmadığından,
+        // toplamlar hesaplandıktan sonra gruplamayı uygulayıp sayfalamayı elle yapıyoruz.
+        $total = $query->aggregate('COUNT', array(DB::raw('DISTINCT v_cdr.linkedid')));
+
+        $query->group_by('v_cdr.linkedid');
         $query->order_by($sort, $dir);
 
         if (isset($export)) {
             self::export_to_excel($query);
         }
 
-        $query = $query->paginate($per_page);
+        $page = Paginator::page($total, $per_page);
+        $results = $query->for_page($page, $per_page)->get();
 
-        $cdrs = PaginatorSorter::make($query->results, $query->total, $per_page, $default_sort);
+        $cdrs = PaginatorSorter::make($results, $total, $per_page, $default_sort);
 
         $display_agent_billsec = false;
         if (Config::get('application.agent_billsec')) {
             $display_agent_billsec = true;
-            foreach ($query->results as $result) {
+            foreach ($results as $result) {
                 $result->agent_billsec = self::calculate_agent_billsec($result->uniqueid);
             }
         }
