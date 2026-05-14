@@ -21,29 +21,6 @@ class Cdr_Controller extends Base_Controller
         Config::set('database.default', 'asterisk');
     }
 
-    private static function getCdrQuery()
-    {
-        $query = DB::table('v_cdr')->select(array(
-            'v_cdr.*',
-            'ringgroups.description',
-            'users_src.name AS src_name',
-            'users_dst.name AS dst_name',
-            'notes.note',
-        ))
-            ->left_join('asterisk.ringgroups', 'dst', '=', 'asterisk.ringgroups.grpnum')
-            ->left_join('asterisk.users AS users_src', 'src', '=', 'users_src.extension')
-            ->left_join('asterisk.users AS users_dst', 'dst', '=', 'users_dst.extension')
-            ->left_join('cdrapp.notes AS notes', 'v_cdr.uniqueid', '=', 'notes.uniqueid');
-        if (Config::get('application.call_tags')) {
-            $query->selects[] = 'queue_log.data1 as tag';
-            $query->left_join('asteriskrealtime.queue_log', function ($join) {
-                $join->on('queue_log.callid', '=', 'v_cdr.linkedid');
-                $join->on('queue_log.event', '=', DB::raw("'UPDATEFIELD'"));
-            });
-        }
-        return $query;
-    }
-
     public function action_index()
     {
         $filefield = Config::get('application.filefield');
@@ -61,93 +38,192 @@ class Cdr_Controller extends Base_Controller
         $datestart = !empty($datestart) ? Cdr::format_datetime_input($datestart) : date('Y-m-d 00:00');
         $dateend = !empty($dateend) ? Cdr::format_datetime_input($dateend) : date('Y-m-d 23:59');
 
-        $query = self::getCdrQuery();
-        $query->raw_where("calldate BETWEEN '$datestart' AND '$dateend'");
+        // =========================================================================
+        // 1. QUERY TEMPLATES — the shape of the SQL, with placeholders for filters
+        // =========================================================================
+
+        $innerWhereSql  = '__INNER_WHERE__';   // filters applied inside the ranking subquery
+        $outerWhereSql  = '__OUTER_WHERE__';   // filters applied after joins
+        $tagSelect      = '__TAG_SELECT__';    // optional ", queue_log.data1 AS tag"
+        $tagJoin        = '__TAG_JOIN__';      // optional LEFT JOIN queue_log
+        $orderBySql     = '__ORDER_BY__';      // "ranked.col DIR"
+
+        $baseSql = "
+            FROM (
+                SELECT v_cdr.*,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY linkedid
+                        ORDER BY
+                            (recordingfile IS NOT NULL AND recordingfile != '') DESC,
+                            billsec DESC,
+                            duration DESC,
+                            uniqueid ASC
+                    ) AS rn
+                FROM v_cdr
+                WHERE $innerWhereSql
+            ) ranked
+            LEFT JOIN asterisk.ringgroups ON ranked.dst = asterisk.ringgroups.grpnum
+            LEFT JOIN asterisk.users AS users_src ON ranked.src = users_src.extension
+            LEFT JOIN asterisk.users AS users_dst ON ranked.dst = users_dst.extension
+            LEFT JOIN cdrapp.notes AS notes ON ranked.uniqueid = notes.uniqueid
+            $tagJoin
+            WHERE $outerWhereSql
+        ";
+
+        $totalsSqlTemplate = "
+            SELECT
+                COUNT(*) AS total_count,
+                COALESCE(SUM(ranked.billsec), 0) AS total_billsec
+            $baseSql
+        ";
+
+        $dataSqlTemplate = "
+            SELECT ranked.*,
+                asterisk.ringgroups.description,
+                users_src.name AS src_name,
+                users_dst.name AS dst_name,
+                notes.note
+                $tagSelect
+            $baseSql
+            ORDER BY $orderBySql
+            LIMIT ? OFFSET ?
+        ";
+
+        $exportSqlTemplate = "
+            SELECT ranked.*,
+                asterisk.ringgroups.description,
+                users_src.name AS src_name,
+                users_dst.name AS dst_name,
+                notes.note
+                $tagSelect
+            $baseSql
+            ORDER BY $orderBySql
+        ";
+
+        // =========================================================================
+        // 2. FILTER BUILDING — collect WHERE clauses and bindings from request
+        // =========================================================================
+
+        // --- Inner filters (apply to v_cdr columns, before ranking) ---
+        $innerClauses = array('v_cdr.calldate BETWEEN ? AND ?');
+        $innerBindings = array($datestart, $dateend);
 
         if (!Auth::user()->allrows) {
-            $query->where($filefield, '!=', '');
+            $innerClauses[] = "v_cdr.$filefield != ?";
+            $innerBindings[] = '';
         }
-
         if (!empty($status)) {
-            $query->where('disposition', '=', $status);
+            $innerClauses[] = 'v_cdr.disposition = ?';
+            $innerBindings[] = $status;
         }
         if (!empty($dstchannel)) {
-            $query->where('dstchannel', 'LIKE', "%$dstchannel%");
+            $innerClauses[] = 'v_cdr.dstchannel LIKE ?';
+            $innerBindings[] = "%$dstchannel%";
         }
         if (!empty($accountcode)) {
-            $query->where('accountcode', 'LIKE', "%$accountcode%");
+            $innerClauses[] = 'v_cdr.accountcode LIKE ?';
+            $innerBindings[] = "%$accountcode%";
         }
         if (!empty($did)) {
-            $query->where('did', '=', $did);
-        }
-        if (!empty($tag)) {
-            if ($tag == 'null') {
-                $query->where_null('queue_log.data1');
-            } else {
-                $query->where('queue_log.data1', '=', $tag . Cdr::$tag_suffix);
-            }
+            $innerClauses[] = 'v_cdr.did = ?';
+            $innerBindings[] = $did;
         }
 
+        // Number filters (raw SQL fragments from existing helper)
         $number_filters = array();
-        if (Auth::user()->perm) {
-            $number_filters['perm'] = Auth::user()->perm;
-        }
-        if (!empty($src)) {
-            $number_filters['src'] = $src;
-        }
-        if (!empty($dst)) {
-            $number_filters['dst'] = $dst;
-        }
-        if (!empty($src_dst)) {
-            $number_filters['src_dst'] = $src_dst;
+        if (Auth::user()->perm)   $number_filters['perm']    = Auth::user()->perm;
+        if (!empty($src))         $number_filters['src']     = $src;
+        if (!empty($dst))         $number_filters['dst']     = $dst;
+        if (!empty($src_dst))     $number_filters['src_dst'] = $src_dst;
+        foreach ($number_filters as $type => $val) {
+            $innerClauses[] = self::build_number_where_clauses($type, $val);
         }
 
-        $wheres = array();
-
-        // Apply number filter
-        foreach ($number_filters as $type => $number_filter) {
-            $wheres[] = self::build_number_where_clauses($type, $number_filter);
-        }
-
-        // Apply scope filter
+        // Scope filter
         if (!empty($scope)) {
             if ($scope == 'in') {
-                $wheres[] = '(CHAR_LENGTH(src) < 7 AND CHAR_LENGTH(dst) < 7)';
-            }
-            if ($scope == 'out') {
-                $wheres[] = '(CHAR_LENGTH(src) >= 7 OR CHAR_LENGTH(dst) >= 7)';
+                $innerClauses[] = '(CHAR_LENGTH(v_cdr.src) < 7 AND CHAR_LENGTH(v_cdr.dst) < 7)';
+            } elseif ($scope == 'out') {
+                $innerClauses[] = '(CHAR_LENGTH(v_cdr.src) >= 7 OR CHAR_LENGTH(v_cdr.dst) >= 7)';
             }
         }
 
-        // Apply note filter
+        // --- Outer filters (apply after joins, on joined tables) ---
+        $outerClauses = array('ranked.rn = 1');
+        $outerBindings = array();
+
+        if (!empty($tag)) {
+            if ($tag == 'null') {
+                $outerClauses[] = 'queue_log.data1 IS NULL';
+            } else {
+                $outerClauses[] = 'queue_log.data1 = ?';
+                $outerBindings[] = $tag . Cdr::$tag_suffix;
+            }
+        }
+
         if (!empty($note)) {
-            if ($note == 'no') {
-                $wheres[] = 'notes.note IS NULL';
-            }
-            if ($note == 'yes') {
-                $wheres[] = 'notes.note IS NOT NULL';
-            }
+            if ($note == 'no')  $outerClauses[] = 'notes.note IS NULL';
+            if ($note == 'yes') $outerClauses[] = 'notes.note IS NOT NULL';
         }
 
-        foreach ($wheres as $where) {
-            $query->raw_where($where);
+        // --- Optional tag join/select ---
+        $tagSelectSql = '';
+        $tagJoinSql = '';
+        if (Config::get('application.call_tags')) {
+            $tagSelectSql = ', queue_log.data1 AS tag';
+            $tagJoinSql = "
+                LEFT JOIN asteriskrealtime.queue_log
+                    ON queue_log.callid = ranked.linkedid
+                AND queue_log.event = 'UPDATEFIELD'
+            ";
         }
 
-        $total_billsec = $query->sum('billsec');
+        // --- Sort column (whitelisted) ---
+        $allowedSorts = array(
+            'calldate', 'src', 'dst', 'duration', 'billsec',
+            'disposition', 'dstchannel', 'clid', 'linkedid',
+        );
+        $sortCol = in_array($sort, $allowedSorts) ? $sort : 'calldate';
+        $sortDir = strtolower($dir) === 'asc' ? 'ASC' : 'DESC';
 
-        // paginate() ve sum() GROUP BY ile doğru çalışmadığından,
-        // toplamlar hesaplandıktan sonra gruplamayı uygulayıp sayfalamayı elle yapıyoruz.
-        $total = $query->aggregate('COUNT', array(DB::raw('DISTINCT v_cdr.linkedid')));
+        // =========================================================================
+        // 3. ASSEMBLE — plug filters into templates
+        // =========================================================================
 
-        $query->group_by('v_cdr.linkedid');
-        $query->order_by($sort, $dir);
+        $replacements = array(
+            '__INNER_WHERE__' => implode(' AND ', $innerClauses),
+            '__OUTER_WHERE__' => implode(' AND ', $outerClauses),
+            '__TAG_SELECT__'  => $tagSelectSql,
+            '__TAG_JOIN__'    => $tagJoinSql,
+            '__ORDER_BY__'    => "ranked.$sortCol $sortDir",
+        );
 
+        $totalsSql = strtr($totalsSqlTemplate, $replacements);
+        $dataSql   = strtr($dataSqlTemplate,   $replacements);
+        $exportSql = strtr($exportSqlTemplate, $replacements);
+
+        $filterBindings = array_merge($innerBindings, $outerBindings);
+
+        // =========================================================================
+        // 4. EXECUTE
+        // =========================================================================
+
+        // Totals
+        $totalsResult  = DB::query($totalsSql, $filterBindings);
+        $total         = $totalsResult[0]->total_count;
+        $total_billsec = $totalsResult[0]->total_billsec;
+
+        // Export branch (no pagination, returns everything)
         if (isset($export)) {
-            self::export_to_excel($query);
+            self::export_to_excel_raw($exportSql, $filterBindings);
         }
 
-        $page = Paginator::page($total, $per_page);
-        $results = $query->for_page($page, $per_page)->get();
+        // Paginated data
+        $page   = Paginator::page($total, $per_page);
+        $offset = ($page - 1) * $per_page;
+
+        $dataBindings = array_merge($filterBindings, array((int) $per_page, (int) $offset));
+        $results = DB::query($dataSql, $dataBindings);
 
         $cdrs = PaginatorSorter::make($results, $total, $per_page, $default_sort);
 
@@ -155,7 +231,7 @@ class Cdr_Controller extends Base_Controller
         if (Config::get('application.agent_billsec')) {
             $display_agent_billsec = true;
             foreach ($results as $result) {
-                $result->agent_billsec = self::calculate_agent_billsec($result->uniqueid);
+                $result->agent_billsec = self::calculate_agent_billsec($result->linkedid);
             }
         }
 
@@ -268,14 +344,9 @@ class Cdr_Controller extends Base_Controller
 
         $cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $timestamp))->first();
 
-        $related_uniqueids = self::get_related_uniqueids($cdr->uniqueid, $cdr->linkedid);
-        if (!$related_uniqueids) {
-            $related_uniqueids = array('yok');
-        }
-
-        $related_cdrs = self::get_cdrs_by_uniqueids($related_uniqueids);
-        $related_cels = self::get_cels_by_uniqueids($related_uniqueids)->get();
-        $related_queue_logs = self::get_queue_logs_by_uniqueids($related_uniqueids)->get();
+        $related_cdrs = self::get_cdrs_by_linkedid($cdr->linkedid);
+        $related_cels = self::get_cels_by_linkedid($cdr->linkedid)->get();
+        $related_queue_logs = self::get_queue_logs_by_linkedid($cdr->linkedid)->get();
 
         $total_billsec = $related_cdrs->sum('billsec');
 
@@ -308,10 +379,9 @@ class Cdr_Controller extends Base_Controller
         ));
     }
 
-    private static function calculate_agent_billsec($uniqueid)
+    private static function calculate_agent_billsec($linkedid)
     {
-        $related_uniqueids = self::get_related_uniqueids($uniqueid);
-        $related_cels = self::get_cels_by_uniqueids($related_uniqueids)->get();
+        $related_cels = self::get_cels_by_linkedid($linkedid)->get();
 
         $call_transferred = false;
         $agent_exten = null;
@@ -371,74 +441,35 @@ class Cdr_Controller extends Base_Controller
         return null;
     }
 
-    private static function get_related_uniqueids($uniqueid, $linkedid = 'dev')
+    private static function get_related_uniqueids($linkedid = 'dev')
     {
-        $pass = DB::table('cel')
-            ->select(array('uniqueid', 'linkedid'))
-            ->where('uniqueid', '=', $uniqueid)
-            ->or_where('linkedid', '=', $linkedid)
+        $result = DB::table('cel')
+            ->where('linkedid', $linkedid)
             ->get();
 
-        $last_criteria = array();
-        $next = array();
-        $done = false;
-
-        while (!$done) {
-            unset($next);
-            $next = array();
-            foreach ($pass as $set) {
-                $next[] = $set->uniqueid;
-                $next[] = $set->linkedid;
-            }
-            $next = array_unique($next);
-            sort($next);
-
-            if ($next === $last_criteria) {
-                $done = true;
-                continue;
-            }
-            unset($pass);
-
-            $pass = DB::table('cel')
-                ->select(array('uniqueid', 'linkedid'))
-                ->where_in('uniqueid', $next)
-                ->or_where_in('linkedid', $next)
-                ->get();
-
-            $last_criteria = $next;
-            $next = array();
+        $uniqueids = array();
+        foreach ($result as $row) {
+            $uniqueids[] = $row->uniqueid;
         }
-
-        $ids = array();
-
-        foreach ($pass as $cel) {
-            $ids[] = $cel->uniqueid;
-            $ids[] = $cel->linkedid;
-
-            $ids = array_unique($ids);
-            sort($ids);
-        }
-
-        return $ids;
+        $uniqueids = array_unique($uniqueids);
+        sort($uniqueids);
+        return $uniqueids;
     }
 
-    private static function get_cdrs_by_uniqueids($uniqueids)
+    private static function get_cdrs_by_linkedid($linkedid)
     {
-        $query = self::getCdrQuery();
-        $query->where_in('v_cdr.uniqueid', $uniqueids);
-        return $query;
+        return DB::table('cdr')->where('linkedid', $linkedid);
     }
 
-    private static function get_cels_by_uniqueids($uniqueids)
+    private static function get_cels_by_linkedid($linkedid)
     {
-        return DB::table('cel')->select('*')
-            ->where_in('uniqueid', $uniqueids)
-            ->or_where_in('linkedid', $uniqueids)
-            ->or_where_in('accountcode', $uniqueids);
+        return DB::table('cel')->where('linkedid', $linkedid);
     }
 
-    private static function get_queue_logs_by_uniqueids($uniqueids)
+    private static function get_queue_logs_by_linkedid($linkedid)
     {
+        $uniqueids = self::get_related_uniqueids($linkedid);
+
         Config::set('database.default', 'asteriskrealtime');
 
         return DB::table('queue_log')->select('*')

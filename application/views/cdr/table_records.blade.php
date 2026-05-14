@@ -68,7 +68,11 @@
             </td>
             @endif
             <td>{{ __("misc.$cdr->disposition") }}</td>
-            <td>{{ Cdr::format_billsec($cdr->billsec) }}</td>
+            <td>
+                @if ($cdr->disposition == 'ANSWERED')
+                {{ Cdr::format_billsec($cdr->billsec) }}
+                @endif
+            </td>
             @if ($display_agent_billsec)
                 @if ($cdr->billsec <= $cdr->agent_billsec)
                 {{ $cdr->agent_billsec = null }}
@@ -77,7 +81,7 @@
             @endif
             @if ($buttons_download || $buttons_listen)
                 <td class="buttons">
-                    @if ($cdr->$filefield)
+                    @if ($cdr->$filefield && $cdr->billsec > 0)
                     {{ Form::hidden('uniqueid', $cdr->uniqueid) }}
                     {{ Form::hidden('calldate', strtotime($cdr->calldate)) }}
                     @if ($buttons_listen)

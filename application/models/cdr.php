@@ -26,6 +26,15 @@ class Cdr extends Eloquent
     public static function format_src_dst($cdr, $type)
     {
         $name = $type . '_name';
+
+        if (!isset($cdr->$name)) {
+            if ($type == 'dst' && $cdr->dst == 's') {
+                return 'Santral';
+            } else {
+                return $cdr->$type;
+            }
+        }
+
         if ($cdr->$name) {
             return $cdr->$name . ' (' . $cdr->$type . ')';
         } elseif ($type == 'dst' and $cdr->description) {
