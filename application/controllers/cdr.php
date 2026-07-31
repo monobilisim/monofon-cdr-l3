@@ -57,6 +57,7 @@ class Cdr_Controller extends Base_Controller
                             (recordingfile IS NOT NULL AND recordingfile != '') DESC,
                             billsec DESC,
                             duration DESC,
+                            calldate DESC,
                             uniqueid ASC
                     ) AS rn
                 FROM v_cdr
@@ -444,7 +445,7 @@ class Cdr_Controller extends Base_Controller
     private static function get_related_uniqueids($linkedid = 'dev')
     {
         $result = DB::table('cel')
-            ->where('linkedid', $linkedid)
+            ->where('linkedid', '=', $linkedid)
             ->get();
 
         $uniqueids = array();
@@ -458,12 +459,12 @@ class Cdr_Controller extends Base_Controller
 
     private static function get_cdrs_by_linkedid($linkedid)
     {
-        return DB::table('cdr')->where('linkedid', $linkedid);
+        return DB::table('cdr')->where('linkedid', '=', $linkedid);
     }
 
     private static function get_cels_by_linkedid($linkedid)
     {
-        return DB::table('cel')->where('linkedid', $linkedid);
+        return DB::table('cel')->where('linkedid', '=', $linkedid);
     }
 
     private static function get_queue_logs_by_linkedid($linkedid)
@@ -478,6 +479,8 @@ class Cdr_Controller extends Base_Controller
 
     public function action_listen($uniqueid, $calldate)
     {
+        $download_url = URL::to('/cdr/download/' . $uniqueid . '/' . $calldate);
+
         $html = <<<HTML
             <div id="waveform-progress-wrapper">
                 <div id="waveform-progress" class="progress progress-striped active"><div class="bar" style="width: 0%;"></div></div>
@@ -521,7 +524,7 @@ class Cdr_Controller extends Base_Controller
                 $('#waveform-progress-wrapper').show();
                 $('#waveform').css({'height': 0, 'overflow': 'hidden'});
 
-                wavesurfer.load('/cdr/download/$uniqueid/$calldate');
+                wavesurfer.load('$download_url');
 
                 wavesurfer.on('loading', function (percentage) {
                     $('#waveform-progress .bar').css('width', percentage.toString() + '%');

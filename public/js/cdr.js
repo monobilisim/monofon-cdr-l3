@@ -118,7 +118,7 @@ $(document).ready(function() {
 	$("#listen").on('shown', function() {
 		var uniqueid = $(this).data("uniqueid");
 		var calldate = $(this).data("calldate");
-		$(".modal-body > p").load("/cdr/listen/" + uniqueid + "/" + calldate);
+		$(".modal-body > p").load(base_url + "/cdr/listen/" + uniqueid + "/" + calldate);
 	});
 	$("#listen").on('hidden', function() {
 		var spinner = '<span class="spinner"></span>';
