@@ -100,4 +100,6 @@
         </div>
     </div>
 
+    @include('cdr.modals')
+
 @endsection

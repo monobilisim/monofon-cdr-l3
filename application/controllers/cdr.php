@@ -1,5 +1,82 @@
 <?php
 
+class SimpleCollection implements IteratorAggregate, Countable
+{
+    protected $items;
+
+    public function __construct(array $items = array())
+    {
+        $this->items = $items;
+    }
+
+    public function getIterator()
+    {
+        return new ArrayIterator($this->items);
+    }
+
+    public function count()
+    {
+        return count($this->items);
+    }
+
+    public function all()
+    {
+        return $this->items;
+    }
+
+    public function first()
+    {
+        return isset($this->items[0]) ? $this->items[0] : null;
+    }
+
+    public function sum($key)
+    {
+        $total = 0;
+        foreach ($this->items as $item) {
+            $total += is_object($item) ? $item->$key : $item[$key];
+        }
+        return $total;
+    }
+
+    public function pluck($key)
+    {
+        $result = array();
+        foreach ($this->items as $item) {
+            $result[] = is_object($item) ? $item->$key : $item[$key];
+        }
+        return $result;
+    }
+
+    public function push($item)
+    {
+        $this->items[] = $item;
+        return $this;
+    }
+
+    public function order_by($key, $direction = 'asc')
+    {
+        usort($this->items, function ($a, $b) use ($key, $direction) {
+            $valA = is_object($a) ? $a->$key : $a[$key];
+            $valB = is_object($b) ? $b->$key : $b[$key];
+
+            if ($valA == $valB) return 0;
+
+            $result = ($valA < $valB) ? -1 : 1;
+            return ($direction === 'desc') ? -$result : $result;
+        });
+
+        return $this;
+    }
+
+    public function __get($name)
+    {
+        if ($name === 'results' || $name === 'items') {
+            return $this->items;
+        }
+        return null;
+    }
+}
+
 class Cdr_Controller extends Base_Controller
 {
     public function before()
@@ -345,14 +422,13 @@ class Cdr_Controller extends Base_Controller
 
         $cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $timestamp))->first();
 
-        $related_cdrs = self::get_cdrs_by_linkedid($cdr->linkedid);
+        $related_cdrs = self::get_related_cdrs($uniqueid);
         $related_cels = self::get_cels_by_linkedid($cdr->linkedid)->get();
         $related_queue_logs = self::get_queue_logs_by_linkedid($cdr->linkedid)->get();
 
         $total_billsec = $related_cdrs->sum('billsec');
 
         $related_cdrs->order_by($sort, $dir);
-        $related_cdrs = $related_cdrs->paginate($per_page);
 
         $related_cdrs = PaginatorSorter::make($related_cdrs->results, $related_cdrs->total, $per_page, $default_sort);
 
@@ -457,9 +533,67 @@ class Cdr_Controller extends Base_Controller
         return $uniqueids;
     }
 
-    private static function get_cdrs_by_linkedid($linkedid)
+    private static function get_related_cdrs($uniqueid)
     {
-        return DB::table('cdr')->where('linkedid', '=', $linkedid);
+        $seedRow = DB::table('cdr')->where('uniqueid', '=', $uniqueid)->first();
+
+        if (!$seedRow) {
+            return new SimpleCollection();
+        }
+
+        $collected = array();
+        $processedLinkedIds = array();
+        $queue = array($seedRow->linkedid);
+
+        for ($hop = 0; $hop < 5 && count($queue) > 0; $hop++) {
+            $currentLinkedId = array_shift($queue);
+
+            if (in_array($currentLinkedId, $processedLinkedIds)) {
+                continue;
+            }
+            $processedLinkedIds[] = $currentLinkedId;
+
+            $group = DB::table('cdr')->where('linkedid', '=', $currentLinkedId)->get();
+
+            foreach ($group as $row) {
+                $collected[] = $row;
+
+                if (empty($row->dstchannel)) {
+                    continue;
+                }
+
+                $bridgedRows = DB::table('cdr')
+                    ->where('dstchannel', '=', $row->dstchannel)
+                    ->where('calldate', '>', $row->calldate)
+                    ->where('calldate', '<=', DB::raw("DATE_ADD('{$row->calldate}', INTERVAL 30 SECOND)"))
+                    ->where('uniqueid', '!=', $row->uniqueid)
+                    ->get();
+
+                foreach ($bridgedRows as $bridged) {
+                    if (!in_array($bridged->linkedid, $processedLinkedIds)
+                        && !in_array($bridged->linkedid, $queue)) {
+                        $queue[] = $bridged->linkedid;
+                    }
+                }
+            }
+        }
+
+        $seen = array();
+        $result = array();
+
+        foreach ($collected as $row) {
+            if (empty($row->recordingfile) || isset($seen[$row->recordingfile])) {
+                continue;
+            }
+            $seen[$row->recordingfile] = true;
+            $result[] = $row;
+        }
+
+        usort($result, function ($a, $b) {
+            return strcmp($a->calldate, $b->calldate);
+        });
+
+        return new SimpleCollection($result);
     }
 
     private static function get_cels_by_linkedid($linkedid)
