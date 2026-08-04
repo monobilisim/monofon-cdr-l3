@@ -125,9 +125,29 @@ class Cdr_Controller extends Base_Controller
         $tagJoin        = '__TAG_JOIN__';      // optional LEFT JOIN queue_log
         $orderBySql     = '__ORDER_BY__';      // "ranked.col DIR"
 
+        // Dial ile bir cihaz kanalına çıkan çağrılarda gerçekten çalan dahiliyi,
+        // diğer durumlarda dilenen numarayı verir. Hem SELECT'te (dst_real) hem de
+        // numara filtrelerinde kullanılıyor; alias WHERE'de görünmediği için ifadenin
+        // kendisi filtreye de veriliyor.
+        $dstRealExpr = "
+                    CASE
+                        WHEN lastapp = 'Dial'
+                            AND dstchannel REGEXP '^(PJSIP|SIP)/'
+                        THEN REGEXP_REPLACE(
+                            SUBSTRING_INDEX(dstchannel, '/', -1),
+                            '-[0-9A-Fa-f]+$',
+                            ''
+                        )
+                        ELSE dst
+                    END";
+
         $baseSql = "
             FROM (
-                SELECT v_cdr.*,
+                SELECT
+                    v_cdr.*,
+
+                    $dstRealExpr AS dst_real,
+
                     ROW_NUMBER() OVER (
                         PARTITION BY linkedid
                         ORDER BY
@@ -142,7 +162,7 @@ class Cdr_Controller extends Base_Controller
             ) ranked
             LEFT JOIN asterisk.ringgroups ON ranked.dst = asterisk.ringgroups.grpnum
             LEFT JOIN asterisk.users AS users_src ON ranked.src = users_src.extension
-            LEFT JOIN asterisk.users AS users_dst ON ranked.dst = users_dst.extension
+            LEFT JOIN asterisk.users AS users_dst ON ranked.dst_real = users_dst.extension
             LEFT JOIN cdrapp.notes AS notes ON ranked.uniqueid = notes.uniqueid
             $tagJoin
             WHERE $outerWhereSql
@@ -157,6 +177,7 @@ class Cdr_Controller extends Base_Controller
 
         $dataSqlTemplate = "
             SELECT ranked.*,
+                ranked.dst_real AS dst,
                 asterisk.ringgroups.description,
                 users_src.name AS src_name,
                 users_dst.name AS dst_name,
@@ -214,7 +235,7 @@ class Cdr_Controller extends Base_Controller
         if (!empty($dst))         $number_filters['dst']     = $dst;
         if (!empty($src_dst))     $number_filters['src_dst'] = $src_dst;
         foreach ($number_filters as $type => $val) {
-            $innerClauses[] = self::build_number_where_clauses($type, $val);
+            $innerClauses[] = self::build_number_where_clauses($type, $val, $dstRealExpr);
         }
 
         // Scope filter
@@ -263,6 +284,11 @@ class Cdr_Controller extends Base_Controller
         );
         $sortCol = in_array($sort, $allowedSorts) ? $sort : 'calldate';
         $sortDir = strtolower($dir) === 'asc' ? 'ASC' : 'DESC';
+
+        // Listede "Aranan" kolonu dst_real gösterdiği için sıralama da onu izler.
+        if ($sortCol === 'dst') {
+            $sortCol = 'dst_real';
+        }
 
         // =========================================================================
         // 3. ASSEMBLE — plug filters into templates
@@ -367,7 +393,7 @@ class Cdr_Controller extends Base_Controller
             ->with('message_status', 'success');
     }
 
-    protected static function build_number_where_clauses($type, $number_filter)
+    protected static function build_number_where_clauses($type, $number_filter, $dst_expr = 'dst')
     {
         $filters = explode(';', $number_filter);
         $clauses = array();
@@ -391,15 +417,28 @@ class Cdr_Controller extends Base_Controller
             }
         }
 
+        // Aranan tarafı için hem ham dst hem de gerçekten çalan dahili (dst_real)
+        // denenir; ring group / kuyruk çağrılarında listede görünen numara ikincisi.
+        $dst_targets = array('dst');
+        if ($dst_expr !== 'dst') {
+            $dst_targets[] = $dst_expr;
+        }
+
         foreach ($clauses as $key => $clause) {
+            $dst_parts = array();
+            foreach ($dst_targets as $target) {
+                $dst_parts[] = $target . ' ' . $clause;
+            }
+            $dst_clause = implode(' OR ', $dst_parts);
+
             if ($type == 'perm' or $type == 'src_dst') {
-                $clauses[$key] = 'src ' . $clause . ' OR ' . 'dst ' . $clause;
+                $clauses[$key] = 'src ' . $clause . ' OR ' . $dst_clause;
             }
             if ($type == 'src') {
                 $clauses[$key] = 'src ' . $clause;
             }
             if ($type == 'dst') {
-                $clauses[$key] = 'dst ' . $clause;
+                $clauses[$key] = $dst_clause;
             }
         }
 
