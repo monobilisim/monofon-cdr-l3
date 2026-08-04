@@ -19,7 +19,7 @@
         <th>{{ $cdrs->sortlink('tag', 'Etiket') }}</th>
         @endif
         <th>{{ $cdrs->sortlink('disposition', 'Durum') }}</th>
-        <th>{{ $cdrs->sortlink('billsec', 'Süre') }}</th>
+        <th>{{ $cdrs->sortlink('duration', 'Süre') }}</th>
         @if ($display_agent_billsec)
         <th>Temsilci Süre</th>
         @endif
@@ -69,9 +69,7 @@
             @endif
             <td>{{ __("misc.$cdr->disposition") }}</td>
             <td>
-                @if ($cdr->disposition == 'ANSWERED')
-                {{ Cdr::format_billsec($cdr->billsec) }}
-                @endif
+                {{ Cdr::format_duration($cdr->duration) }}
             </td>
             @if ($display_agent_billsec)
                 @if ($cdr->billsec <= $cdr->agent_billsec)
@@ -81,7 +79,7 @@
             @endif
             @if ($buttons_download || $buttons_listen)
                 <td class="buttons">
-                    @if ($cdr->$filefield && $cdr->billsec > 0)
+                    @if ($cdr->$filefield && $cdr->duration > 0)
                     {{ Form::hidden('uniqueid', $cdr->uniqueid) }}
                     {{ Form::hidden('calldate', strtotime($cdr->calldate)) }}
                     @if ($buttons_listen)
@@ -115,7 +113,7 @@
         <tr>
             <td colspan="10">
                 <strong>Toplam arama sayısı: </strong>{{ $cdrs->total }}<br>
-                <strong>Toplam arama süresi: </strong>{{ Cdr::format_billsec($total_billsec) }}
+                <strong>Toplam arama süresi: </strong>{{ Cdr::format_duration($total_billsec) }}
             </td>
         </tr>
 

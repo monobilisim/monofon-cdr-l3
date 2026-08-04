@@ -48,7 +48,7 @@
                 <td>{{ $cdr->accountcode }}</td>
             @endif
             <td>{{ __("misc.$cdr->disposition") }}</td>
-            <td>{{ Cdr::format_billsec($cdr->billsec) }}</td>
+            <td>{{ Cdr::format_duration($cdr->billsec) }}</td>
             @if ($display_agent_billsec)
                 @if ($cdr->billsec <= $cdr->agent_billsec)
                     {{ $cdr->agent_billsec = null }}
@@ -76,7 +76,7 @@
     <tr>
         <td colspan="{{ $colspan + 1 }}">
             <strong>Toplam arama sayısı: </strong>{{ $cdrs->total }}<br>
-            <strong>Toplam arama süresi: </strong>{{ Cdr::format_billsec($total_billsec) }}
+            <strong>Toplam arama süresi: </strong>{{ Cdr::format_duration($total_billsec) }}
         </td>
     </tr>
 

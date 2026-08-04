@@ -794,7 +794,7 @@ HTML;
             'dstchannel' => 'Aranan Kanal',
             'server' => 'Hesap Kodu',
             'disposition' => 'Durum',
-            'billsec' => 'Süre',
+            'duration' => 'Süre',
         );
 
         $config_cols = array('did', 'clid', 'dstchannel', 'accountcode');
@@ -824,8 +824,8 @@ HTML;
                     $value = Cdr::format_src_dst($cdr, $column);
                 } else if ($column == 'disposition') {
                     $value = Lang::line("misc.$cdr->disposition")->get();
-                } else if ($column == 'billsec') {
-                    $value = Cdr::format_billsec($cdr->billsec);
+                } else if ($column == 'duration') {
+                    $value = Cdr::format_duration($cdr->duration);
                 } else {
                     $value = $cdr->$column;
                 }

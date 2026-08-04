@@ -5,7 +5,7 @@ class Cdr extends Eloquent
     public static $table = 'v_cdr';
     public static $key = 'uniqueid';
 
-    public static function format_billsec($t)
+    public static function format_duration($t)
     {
         if ($t >= 3600) {
             return sprintf("%02d%s%02d%s%02d", floor($t / 3600), ':', ($t / 60) % 60, ':', $t % 60);
@@ -20,7 +20,7 @@ class Cdr extends Eloquent
             return '';
         }
 
-        return self::format_billsec($t);
+        return self::format_duration($t);
     }
 
     public static function format_src_dst($cdr, $type)

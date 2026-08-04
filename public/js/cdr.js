@@ -14,10 +14,6 @@ $(document).ready(function() {
 		timeText: '',
 	});
 
-	$("input[name='datestart']").change(function() {
-            $("input[name='dateend']").val($(this).val());
-    });
-
 	$('.icon-question-sign').bind('mouseenter mouseleave', function() {
 		$(this).next().toggle();
 	});
