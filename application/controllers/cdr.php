@@ -535,6 +535,9 @@ class Cdr_Controller extends Base_Controller
 
     private static function get_related_cdrs($uniqueid)
     {
+        // bağlı çağrı aramasında çağrı saatinin öncesine ve sonrasına bakılacak süre (saniye)
+        $related_window = 300;
+
         $seedRow = DB::table('cdr')->where('uniqueid', '=', $uniqueid)->first();
 
         if (!$seedRow) {
@@ -563,8 +566,8 @@ class Cdr_Controller extends Base_Controller
                 }
 
                 // aynı kanal üzerindeki bağlı çağrıları çağrı saatinin 5 dk. öncesi ve sonrası içinde arıyoruz
-                $window_start = date('Y-m-d H:i:s', strtotime($row->calldate) - self::$related_window);
-                $window_end = date('Y-m-d H:i:s', strtotime($row->calldate) + self::$related_window);
+                $window_start = date('Y-m-d H:i:s', strtotime($row->calldate) - $related_window);
+                $window_end = date('Y-m-d H:i:s', strtotime($row->calldate) + $related_window);
 
                 $bridgedRows = DB::table('cdr')
                     ->where('dstchannel', '=', $row->dstchannel)
