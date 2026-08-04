@@ -156,4 +156,92 @@ class Cdr extends Eloquent
     {
         return path('storage') . 'tmp';
     }
+
+    public static $monitor_dir = '/var/spool/asterisk/monitor';
+
+    // boş (sessiz) ses kayıtları bu boyutta oluşuyor, bu boyutu aşmayan kayıtları yok sayıyoruz
+    public static $recording_min_size = 2693;
+
+    public static function retrieve_file($cdr)
+    {
+        $filefield = Config::get('application.filefield');
+
+        $file = array();
+        if (Config::get('application.date_sorted_monitor') === true) {
+            $file['path'] = date('Y/m/d', strtotime($cdr->calldate));
+        } else {
+            $file['path'] = "";
+        }
+        $file['name'] = basename(preg_replace('/^audio:/', '', $cdr->$filefield));
+        // cdr tablosunda bazı satırlarda filefield sütunu dosya uzantısı içermiyor, eğer öyleyse uzantıyı ekleyelim
+        $ext = Config::get('application.extension');
+        if (preg_match('/\.[a-zA-Z]{3}$/', $file['name']) === 0) {
+            $file['name'] .= ".$ext";
+        }
+        return $file;
+    }
+
+    public static function has_recording($cdr)
+    {
+        $filefield = Config::get('application.filefield');
+
+        if (!$cdr->$filefield) {
+            return false;
+        }
+
+        $size = self::recording_size($cdr);
+
+        // boyut tespit edilemediyse (uzak sunucuya erişilemiyor vb.) kaydı var sayalım
+        if ($size === null) {
+            return true;
+        }
+
+        return $size > self::$recording_min_size;
+    }
+
+    // dosya boyutunu byte olarak döndürür, dosya yoksa 0, boyut tespit edilemiyorsa null
+    public static function recording_size($cdr)
+    {
+        $file = self::retrieve_file($cdr);
+        $abs_path = self::$monitor_dir . '/' . $file['path'] . '/' . $file['name'];
+
+        if (file_exists($abs_path)) {
+            return (int) filesize($abs_path);
+        }
+
+        $remote_base_url = Config::get('application.remote_base_url');
+        if (!$remote_base_url) {
+            return 0;
+        }
+
+        $url = $remote_base_url . '/' . $file['path'] . '/' . urlencode($file['name']);
+        return self::remote_file_size($url);
+    }
+
+    private static function remote_file_size($url)
+    {
+        static $sizes = array();
+
+        if (array_key_exists($url, $sizes)) {
+            return $sizes[$url];
+        }
+
+        stream_context_set_default(array('http' => array('method' => 'HEAD', 'timeout' => 3)));
+        $headers = @get_headers($url, 1);
+        stream_context_set_default(array('http' => array('method' => 'GET')));
+
+        $size = null;
+        if ($headers) {
+            $length = isset($headers['Content-Length']) ? $headers['Content-Length'] : null;
+            if (is_array($length)) {
+                $length = end($length);
+            }
+            if ($length !== null) {
+                $size = (int) $length;
+            }
+        }
+
+        $sizes[$url] = $size;
+        return $size;
+    }
 }

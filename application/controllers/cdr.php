@@ -562,10 +562,14 @@ class Cdr_Controller extends Base_Controller
                     continue;
                 }
 
+                // aynı kanal üzerindeki bağlı çağrıları çağrı saatinin 5 dk. öncesi ve sonrası içinde arıyoruz
+                $window_start = date('Y-m-d H:i:s', strtotime($row->calldate) - self::$related_window);
+                $window_end = date('Y-m-d H:i:s', strtotime($row->calldate) + self::$related_window);
+
                 $bridgedRows = DB::table('cdr')
                     ->where('dstchannel', '=', $row->dstchannel)
-                    ->where('calldate', '>', $row->calldate)
-                    ->where('calldate', '<=', DB::raw("DATE_ADD('{$row->calldate}', INTERVAL 30 SECOND)"))
+                    ->where('calldate', '>=', $window_start)
+                    ->where('calldate', '<=', $window_end)
                     ->where('uniqueid', '!=', $row->uniqueid)
                     ->get();
 
@@ -726,9 +730,9 @@ HTML;
     public function action_download($uniqueid, $calldate)
     {
         $cdr = Cdr::where('uniqueid', '=', $uniqueid)->where('calldate', '=', date('Y-m-d H:i:s', $calldate))->first();
-        $file = self::retrieve_file($cdr);
+        $file = Cdr::retrieve_file($cdr);
 
-        $abs_path = '/var/spool/asterisk/monitor/' . $file['path'] . '/' . $file['name'];
+        $abs_path = Cdr::$monitor_dir . '/' . $file['path'] . '/' . $file['name'];
 
         $file_url = null;
         if (!file_exists('file://' . $abs_path)) {
@@ -760,25 +764,6 @@ HTML;
                 return Response::download($abs_path, $file['name']);
             }
         }
-    }
-
-    public static function retrieve_file($cdr)
-    {
-        $filefield = Config::get('application.filefield');
-
-        $file = array();
-        if (Config::get('application.date_sorted_monitor') === true) {
-            $file['path'] = date('Y/m/d', strtotime($cdr->calldate));
-        } else {
-            $file['path'] = "";
-        }
-        $file['name'] = basename(preg_replace('/^audio:/', '', $cdr->$filefield));
-        // cdr tablosunda bazı satırlarda filefield sütunu dosya uzantısı içermiyor, eğer öyleyse uzantıyı ekleyelim
-        $ext = Config::get('application.extension');
-        if (preg_match('/\.[a-zA-Z]{3}$/', $file['name']) === 0) {
-            $file['name'] .= ".$ext";
-        }
-        return $file;
     }
 
     private static function export_to_excel($query)
