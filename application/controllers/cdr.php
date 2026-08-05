@@ -125,21 +125,8 @@ class Cdr_Controller extends Base_Controller
         $tagJoin        = '__TAG_JOIN__';      // optional LEFT JOIN queue_log
         $orderBySql     = '__ORDER_BY__';      // "ranked.col DIR"
 
-        // Dial ile bir cihaz kanalına çıkan çağrılarda gerçekten çalan dahiliyi,
-        // diğer durumlarda dilenen numarayı verir. Hem SELECT'te (dst_real) hem de
-        // numara filtrelerinde kullanılıyor; alias WHERE'de görünmediği için ifadenin
-        // kendisi filtreye de veriliyor.
-        $dstRealExpr = "
-                    CASE
-                        WHEN lastapp = 'Dial'
-                            AND dstchannel REGEXP '^(PJSIP|SIP)/'
-                        THEN REGEXP_REPLACE(
-                            SUBSTRING_INDEX(dstchannel, '/', -1),
-                            '-[0-9A-Fa-f]+$',
-                            ''
-                        )
-                        ELSE dst
-                    END";
+        // Alias WHERE'de görünmediği için ifadenin kendisi filtrelere de veriliyor.
+        $dstRealExpr = Cdr::dst_real_sql();
 
         $baseSql = "
             FROM (
@@ -175,9 +162,10 @@ class Cdr_Controller extends Base_Controller
             $baseSql
         ";
 
+        // ranked.* zaten hem dst (çevrilen numara) hem dst_real (çağrıyı alan
+        // dahili) alanlarını taşıyor; gösterimi Cdr::format_dst() birleştiriyor.
         $dataSqlTemplate = "
             SELECT ranked.*,
-                ranked.dst_real AS dst,
                 asterisk.ringgroups.description,
                 users_src.name AS src_name,
                 users_dst.name AS dst_name,
@@ -284,11 +272,6 @@ class Cdr_Controller extends Base_Controller
         );
         $sortCol = in_array($sort, $allowedSorts) ? $sort : 'calldate';
         $sortDir = strtolower($dir) === 'asc' ? 'ASC' : 'DESC';
-
-        // Listede "Aranan" kolonu dst_real gösterdiği için sıralama da onu izler.
-        if ($sortCol === 'dst') {
-            $sortCol = 'dst_real';
-        }
 
         // =========================================================================
         // 3. ASSEMBLE — plug filters into templates
@@ -595,7 +578,9 @@ class Cdr_Controller extends Base_Controller
             }
             $processedLinkedIds[] = $currentLinkedId;
 
-            $group = DB::table('cdr')->where('linkedid', '=', $currentLinkedId)->get();
+            $group = DB::table('cdr')
+                ->where('linkedid', '=', $currentLinkedId)
+                ->get(array('*', DB::raw(Cdr::dst_real_sql() . ' AS dst_real')));
 
             foreach ($group as $row) {
                 $collected[] = $row;
@@ -848,7 +833,9 @@ HTML;
             $data_row = array();
             foreach ($columns as $column => $column_title) {
                 if (in_array($column, array('src', 'dst'))) {
-                    $value = Cdr::format_src_dst($cdr, $column);
+                    $value = $column == 'dst'
+                        ? Cdr::format_dst($cdr)
+                        : Cdr::format_src_dst($cdr, $column);
                 } else if ($column == 'disposition') {
                     $value = Lang::line("misc.$cdr->disposition")->get();
                 } else if ($column == 'duration') {

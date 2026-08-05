@@ -51,7 +51,7 @@
             @else
             <td>{{ Cdr::format_src_dst($cdr, 'src') }}</td>
             @endif
-            <td>{{ Cdr::format_src_dst($cdr, 'dst') }}</td>
+            <td>{{ Cdr::format_dst($cdr) }}</td>
             @if (Config::get('application.dstchannel'))
             <td>{{ $cdr->dstchannel }}</td>
             @endif

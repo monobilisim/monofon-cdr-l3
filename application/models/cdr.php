@@ -44,6 +44,55 @@ class Cdr extends Eloquent
         }
     }
 
+    /**
+     * Çağrıyı gerçekten alan dahiliyi veren SQL ifadesi: Dial ile bir dahili
+     * kanalına çıkıldıysa kanaldaki dahili, aksi halde çevrilen numara.
+     * Sadece tamamı rakamlardan oluşan peer adları (PJSIP/6000-000563aa gibi)
+     * dahili sayılır; trunk kanalları (PJSIP/voip1-000563aa) hariç tutulur.
+     * Sorgularda `dst_real` olarak seçilir; filtrelerde de aynı ifade kullanılır.
+     */
+    public static function dst_real_sql()
+    {
+        return "
+            CASE
+                WHEN lastapp = 'Dial'
+                    AND dstchannel REGEXP '^(PJSIP|SIP)/[0-9]+(-|$)'
+                THEN SUBSTRING_INDEX(
+                    SUBSTRING_INDEX(dstchannel, '/', -1),
+                    '-',
+                    1
+                )
+                ELSE dst
+            END";
+    }
+
+    /**
+     * Aranan kolonu. Çevrilen numara ile çağrıyı gerçekten alan dahili farklıysa
+     * (ring group, kuyruk, yönlendirme) ikisini ok ile birlikte gösterir.
+     */
+    public static function format_dst($cdr)
+    {
+        if (!isset($cdr->dst_real) or $cdr->dst_real == $cdr->dst) {
+            return self::format_src_dst($cdr, 'dst');
+        }
+
+        // Ring group açıklaması çevrilen numaraya, kullanıcı adı ise
+        // çağrıyı alan dahiliye ait.
+        $dialed = self::format_number($cdr->dst, isset($cdr->description) ? $cdr->description : null);
+        $real   = self::format_number($cdr->dst_real, isset($cdr->dst_name) ? $cdr->dst_name : null);
+
+        return $dialed . ' → ' . $real;
+    }
+
+    protected static function format_number($number, $label = null)
+    {
+        if ($number === 's') {
+            return 'Santral';
+        }
+
+        return $label ? $label . ' (' . $number . ')' : $number;
+    }
+
     public static function format_clid($clid)
     {
         preg_match('/"(.+)"/', $clid, $matches);
