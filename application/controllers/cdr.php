@@ -312,6 +312,8 @@ class Cdr_Controller extends Base_Controller
         $dataBindings = array_merge($filterBindings, array((int) $per_page, (int) $offset));
         $results = DB::query($dataSql, $dataBindings);
 
+        self::mark_answered_elsewhere($results);
+
         $cdrs = PaginatorSorter::make($results, $total, $per_page, $default_sort);
 
         $display_agent_billsec = false;
@@ -446,6 +448,11 @@ class Cdr_Controller extends Base_Controller
 
         $related_cdrs = self::get_related_cdrs($uniqueid);
         $related_cels = self::get_cels_by_linkedid($cdr->linkedid)->get();
+
+        // get_queue_logs_by_linkedid() varsayılan bağlantıyı asteriskrealtime'a
+        // çevirdiği için CEL kontrolü ondan önce yapılmalı.
+        self::mark_answered_elsewhere($related_cdrs->results);
+
         $related_queue_logs = self::get_queue_logs_by_linkedid($cdr->linkedid)->get();
 
         $total_billsec = $related_cdrs->sum('billsec');
@@ -476,6 +483,47 @@ class Cdr_Controller extends Base_Controller
             'display_agent_billsec' => false,
             'note' => $note,
         ));
+    }
+
+    /**
+     * billsec = 0 olduğu halde çağrının bir bacağının cevaplandığı satırları
+     * işaretler. Aktarma güdüklerinde CDR satırı NO ANSWER kalır ama aynı
+     * linkedid altında CEL'de ANSWER olayı bulunur.
+     *
+     * Sayfa başına tek sorgu atar ve cel.linkedid_index üzerinden çalışır.
+     * Varsayılan bağlantıyı değiştiren sorgulardan (queue_log) ÖNCE çağrılmalı.
+     */
+    private static function mark_answered_elsewhere($rows)
+    {
+        $linkedids = array();
+
+        foreach ($rows as $row) {
+            $row->answered_elsewhere = false;
+
+            if ($row->billsec == 0 && $row->disposition !== 'ANSWERED' && !empty($row->linkedid)) {
+                $linkedids[$row->linkedid] = true;
+            }
+        }
+
+        if (!$linkedids) {
+            return;
+        }
+
+        $cels = DB::table('cel')
+            ->where('eventtype', '=', 'ANSWER')
+            ->where_in('linkedid', array_keys($linkedids))
+            ->get(array('linkedid'));
+
+        $answered = array();
+        foreach ($cels as $cel) {
+            $answered[$cel->linkedid] = true;
+        }
+
+        foreach ($rows as $row) {
+            if (isset($answered[$row->linkedid])) {
+                $row->answered_elsewhere = true;
+            }
+        }
     }
 
     private static function calculate_agent_billsec($linkedid)

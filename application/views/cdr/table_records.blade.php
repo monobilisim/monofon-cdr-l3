@@ -67,7 +67,7 @@
                 </form>
             </td>
             @endif
-            <td>{{ __("misc.$cdr->disposition") }}</td>
+            <td>{{ __("misc." . Cdr::display_disposition($cdr)) }}</td>
             <td>
                 {{ Cdr::format_duration($cdr->duration) }}
             </td>

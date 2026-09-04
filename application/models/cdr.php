@@ -23,6 +23,25 @@ class Cdr extends Eloquent
         return self::format_duration($t);
     }
 
+    /**
+     * Ekranda gösterilecek çağrı durumu.
+     *
+     * Asterisk'in disposition alanı bazı aktarma ve kanal optimizasyonu
+     * senaryolarında yanlış kalıyor: konuşma gerçekleştiği halde NO ANSWER
+     * ya da BUSY yazabiliyor. billsec yer gerçeği olduğu için ona güveniyoruz.
+     * billsec = 0 olan aktarma güdüklerinde (arayan, hedef açmadan aktarmayı
+     * tamamlayıp düşer) bilgi CEL'den geliyor; bkz.
+     * Cdr_Controller::mark_answered_elsewhere().
+     */
+    public static function display_disposition($cdr)
+    {
+        if ($cdr->billsec > 0 || !empty($cdr->answered_elsewhere)) {
+            return 'ANSWERED';
+        }
+
+        return $cdr->disposition;
+    }
+
     public static function format_src_dst($cdr, $type)
     {
         $name = $type . '_name';
