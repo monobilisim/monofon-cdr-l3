@@ -19,7 +19,8 @@
         <th>{{ $cdrs->sortlink('tag', 'Etiket') }}</th>
         @endif
         <th>{{ $cdrs->sortlink('disposition', 'Durum') }}</th>
-        <th>{{ $cdrs->sortlink('duration', 'Süre') }}</th>
+        <th>{{ $cdrs->sortlink('billsec', 'Görüşme') }}</th>
+        <th>{{ $cdrs->sortlink('duration', 'Toplam') }}</th>
         @if ($display_agent_billsec)
         <th>Temsilci Süre</th>
         @endif
@@ -68,9 +69,8 @@
             </td>
             @endif
             <td>{{ __("misc." . Cdr::display_disposition($cdr)) }}</td>
-            <td>
-                {{ Cdr::format_duration($cdr->duration) }}
-            </td>
+            <td>{{ Cdr::format_talk_duration($cdr) }}</td>
+            <td>{{ Cdr::format_duration($cdr->duration) }}</td>
             @if ($display_agent_billsec)
                 @if ($cdr->billsec <= $cdr->agent_billsec)
                 {{ $cdr->agent_billsec = null }}
@@ -111,9 +111,9 @@
         @endforeach
 
         <tr>
-            <td colspan="10">
+            <td colspan="11">
                 <strong>Toplam arama sayısı: </strong>{{ $cdrs->total }}<br>
-                <strong>Toplam arama süresi: </strong>{{ Cdr::format_duration($total_billsec) }}
+                <strong>Toplam görüşme süresi: </strong>{{ Cdr::format_duration($total_billsec) }}
             </td>
         </tr>
 

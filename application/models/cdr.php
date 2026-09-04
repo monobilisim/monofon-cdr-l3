@@ -36,11 +36,36 @@ class Cdr extends Eloquent
      */
     public static function display_disposition($cdr)
     {
-        if ($cdr->disposition === 'ANSWERED' || !empty($cdr->bridged)) {
-            return 'ANSWERED';
+        return self::has_conversation($cdr) ? 'ANSWERED' : $cdr->disposition;
+    }
+
+    /**
+     * Çağrıda gerçek bir görüşme yapılıp yapılmadığı.
+     *
+     * disposition = ANSWERED olan satırlarda başka kanıt aranmaz. Aksi halde
+     * Cdr_Controller::mark_bridged() tarafından doldurulan bridged bayrağına
+     * bakılır; o bayrak yalnızca ANSWERED olmayan satırlar için sorgulanır.
+     */
+    public static function has_conversation($cdr)
+    {
+        return $cdr->disposition === 'ANSWERED' || !empty($cdr->bridged);
+    }
+
+    /**
+     * Satırın kendi konuşma süresi ("Görüşme" sütunu).
+     *
+     * Görüşme hiç gerçekleşmediyse gösterilmez: gelen çağrıyı IVR
+     * cevapladığında billsec, aranan dahili hiç açmasa bile çağrının sistemde
+     * geçirdiği süreyi (IVR menüsü + çalma) saymaya başlıyor. O süre zaten
+     * "Toplam" sütununda görünüyor.
+     */
+    public static function format_talk_duration($cdr)
+    {
+        if (!self::has_conversation($cdr)) {
+            return '—';
         }
 
-        return $cdr->disposition;
+        return self::format_duration($cdr->billsec);
     }
 
     public static function format_src_dst($cdr, $type)
