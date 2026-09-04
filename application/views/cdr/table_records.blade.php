@@ -79,7 +79,7 @@
             @endif
             @if ($buttons_download || $buttons_listen)
                 <td class="buttons">
-                    @if (Cdr::has_recording($cdr) && $cdr->billsec > 0)
+                    @if (Cdr::has_recording($cdr))
                     {{ Form::hidden('uniqueid', $cdr->uniqueid) }}
                     {{ Form::hidden('calldate', strtotime($cdr->calldate)) }}
                     @if ($buttons_listen)

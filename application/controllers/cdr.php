@@ -138,7 +138,7 @@ class Cdr_Controller extends Base_Controller
                     ROW_NUMBER() OVER (
                         PARTITION BY linkedid
                         ORDER BY
-                            (recordingfile IS NOT NULL AND recordingfile != '') DESC,
+                            recordingfile != '' DESC,
                             billsec DESC,
                             duration DESC,
                             calldate DESC,
@@ -611,6 +611,28 @@ class Cdr_Controller extends Base_Controller
 
         $seen = array();
         $result = array();
+
+        // Aynı recordingfile'ı paylaşan satırlardan hangisinin temsilci olacağı,
+        // ana liste sorgusundaki ROW_NUMBER sıralamasıyla birebir aynı olmalı;
+        // aksi halde iki tablo aynı çağrı için farklı disposition ve süre gösterir.
+        usort($collected, function ($a, $b) {
+            $a_rec = empty($a->recordingfile) ? 0 : 1;
+            $b_rec = empty($b->recordingfile) ? 0 : 1;
+            if ($a_rec !== $b_rec) {
+                return $b_rec - $a_rec;
+            }
+            if ((int) $a->billsec !== (int) $b->billsec) {
+                return (int) $b->billsec - (int) $a->billsec;
+            }
+            if ((int) $a->duration !== (int) $b->duration) {
+                return (int) $b->duration - (int) $a->duration;
+            }
+            $cmp = strcmp($b->calldate, $a->calldate);
+            if ($cmp !== 0) {
+                return $cmp;
+            }
+            return strcmp($a->uniqueid, $b->uniqueid);
+        });
 
         foreach ($collected as $row) {
             if (empty($row->recordingfile) || isset($seen[$row->recordingfile])) {
