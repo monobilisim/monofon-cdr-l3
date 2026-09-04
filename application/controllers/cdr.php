@@ -312,7 +312,7 @@ class Cdr_Controller extends Base_Controller
         $dataBindings = array_merge($filterBindings, array((int) $per_page, (int) $offset));
         $results = DB::query($dataSql, $dataBindings);
 
-        self::mark_answered_elsewhere($results);
+        self::mark_bridged($results);
 
         $cdrs = PaginatorSorter::make($results, $total, $per_page, $default_sort);
 
@@ -451,7 +451,7 @@ class Cdr_Controller extends Base_Controller
 
         // get_queue_logs_by_linkedid() varsayılan bağlantıyı asteriskrealtime'a
         // çevirdiği için CEL kontrolü ondan önce yapılmalı.
-        self::mark_answered_elsewhere($related_cdrs->results);
+        self::mark_bridged($related_cdrs->results);
 
         $related_queue_logs = self::get_queue_logs_by_linkedid($cdr->linkedid)->get();
 
@@ -486,21 +486,25 @@ class Cdr_Controller extends Base_Controller
     }
 
     /**
-     * billsec = 0 olduğu halde çağrının bir bacağının cevaplandığı satırları
+     * Çağrının gerçekten köprülendiği (yani konuşma yapıldığı) satırları
      * işaretler. Aktarma güdüklerinde CDR satırı NO ANSWER kalır ama aynı
-     * linkedid altında CEL'de ANSWER olayı bulunur.
+     * linkedid altında CEL'de BRIDGE_ENTER olayı bulunur.
+     *
+     * Ölçüt olarak billsec ya da CEL ANSWER kullanılamaz: gelen çağrıyı IVR
+     * cevapladığında (AGI) ikisi de işlemeye başlıyor, aranan dahili hiç
+     * açmasa bile. İki kanalın köprülenmesi ise ancak gerçek görüşmede olur.
      *
      * Sayfa başına tek sorgu atar ve cel.linkedid_index üzerinden çalışır.
      * Varsayılan bağlantıyı değiştiren sorgulardan (queue_log) ÖNCE çağrılmalı.
      */
-    private static function mark_answered_elsewhere($rows)
+    private static function mark_bridged($rows)
     {
         $linkedids = array();
 
         foreach ($rows as $row) {
-            $row->answered_elsewhere = false;
+            $row->bridged = false;
 
-            if ($row->billsec == 0 && $row->disposition !== 'ANSWERED' && !empty($row->linkedid)) {
+            if ($row->disposition !== 'ANSWERED' && !empty($row->linkedid)) {
                 $linkedids[$row->linkedid] = true;
             }
         }
@@ -510,18 +514,18 @@ class Cdr_Controller extends Base_Controller
         }
 
         $cels = DB::table('cel')
-            ->where('eventtype', '=', 'ANSWER')
+            ->where('eventtype', '=', 'BRIDGE_ENTER')
             ->where_in('linkedid', array_keys($linkedids))
             ->get(array('linkedid'));
 
-        $answered = array();
+        $bridged = array();
         foreach ($cels as $cel) {
-            $answered[$cel->linkedid] = true;
+            $bridged[$cel->linkedid] = true;
         }
 
         foreach ($rows as $row) {
-            if (isset($answered[$row->linkedid])) {
-                $row->answered_elsewhere = true;
+            if (isset($bridged[$row->linkedid])) {
+                $row->bridged = true;
             }
         }
     }

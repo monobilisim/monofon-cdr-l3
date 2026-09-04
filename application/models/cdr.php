@@ -26,16 +26,17 @@ class Cdr extends Eloquent
     /**
      * Ekranda gösterilecek çağrı durumu.
      *
-     * Asterisk'in disposition alanı bazı aktarma ve kanal optimizasyonu
-     * senaryolarında yanlış kalıyor: konuşma gerçekleştiği halde NO ANSWER
-     * ya da BUSY yazabiliyor. billsec yer gerçeği olduğu için ona güveniyoruz.
-     * billsec = 0 olan aktarma güdüklerinde (arayan, hedef açmadan aktarmayı
-     * tamamlayıp düşer) bilgi CEL'den geliyor; bkz.
-     * Cdr_Controller::mark_answered_elsewhere().
+     * Asterisk'in disposition alanı bazı aktarma senaryolarında konuşma
+     * gerçekleştiği halde NO ANSWER kalıyor. Bu durumda satır, aynı linkedid
+     * altında köprülenme olup olmadığına göre yükseltilir; bkz.
+     * Cdr_Controller::mark_bridged().
+     *
+     * Durum yalnızca yükseltilir, asla düşürülmez: IVR'a düşüp kapanan bir
+     * çağrı ANSWERED kalır, çünkü arayan sisteme ulaşmıştır.
      */
     public static function display_disposition($cdr)
     {
-        if ($cdr->billsec > 0 || !empty($cdr->answered_elsewhere)) {
+        if ($cdr->disposition === 'ANSWERED' || !empty($cdr->bridged)) {
             return 'ANSWERED';
         }
 
