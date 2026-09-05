@@ -158,7 +158,13 @@ class Cdr_Controller extends Base_Controller
         $totalsSqlTemplate = "
             SELECT
                 COUNT(*) AS total_count,
-                COALESCE(SUM(ranked.billsec), 0) AS total_billsec,
+                -- Görüşme olmayan satırlar toplama girmemeli: gelen çağrıyı IVR
+                -- cevapladığında billsec, dahili hiç açmasa bile işliyor. Tam
+                -- ölçüt CEL BRIDGE_ENTER ama sayfa değil TÜM filtre kümesi için
+                -- çalıştığından geniş aralıkta sorguyu ikiye katlıyor; burada
+                -- disposition ile yaklaşıyoruz (bkz. mark_bridged).
+                COALESCE(SUM(CASE WHEN ranked.disposition = 'ANSWERED'
+                                  THEN ranked.billsec ELSE 0 END), 0) AS total_billsec,
                 COALESCE(SUM(ranked.duration), 0) AS total_duration
             $baseSql
         ";
@@ -458,7 +464,15 @@ class Cdr_Controller extends Base_Controller
 
         $related_queue_logs = self::get_queue_logs_by_linkedid($cdr->linkedid)->get();
 
-        $total_billsec = $related_cdrs->sum('billsec');
+        // Bu sayfada satır sayısı az ve bridged bayrağı zaten hesaplandı;
+        // "Görüşme" sütunuyla birebir aynı ölçütü kullanabiliyoruz.
+        $total_billsec = 0;
+        foreach ($related_cdrs as $related_row) {
+            if (Cdr::has_conversation($related_row)) {
+                $total_billsec += $related_row->billsec;
+            }
+        }
+
         $total_duration = $related_cdrs->sum('duration');
 
         // SimpleCollection'da total diye bir alan yok; sayfalayıcıya null
