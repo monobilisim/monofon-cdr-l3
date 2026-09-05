@@ -158,7 +158,8 @@ class Cdr_Controller extends Base_Controller
         $totalsSqlTemplate = "
             SELECT
                 COUNT(*) AS total_count,
-                COALESCE(SUM(ranked.billsec), 0) AS total_billsec
+                COALESCE(SUM(ranked.billsec), 0) AS total_billsec,
+                COALESCE(SUM(ranked.duration), 0) AS total_duration
             $baseSql
         ";
 
@@ -299,6 +300,7 @@ class Cdr_Controller extends Base_Controller
         $totalsResult  = DB::query($totalsSql, $filterBindings);
         $total         = $totalsResult[0]->total_count;
         $total_billsec = $totalsResult[0]->total_billsec;
+        $total_duration = $totalsResult[0]->total_duration;
 
         // Export branch (no pagination, returns everything)
         if (isset($export)) {
@@ -329,6 +331,7 @@ class Cdr_Controller extends Base_Controller
             'filefield' => $filefield,
             'per_page_options' => Cdr::$per_page_options,
             'total_billsec' => $total_billsec,
+            'total_duration' => $total_duration,
             'buttons_download' => Auth::user()->buttons_download,
             'buttons_listen' => Auth::user()->buttons_listen,
             'display_agent_billsec' => $display_agent_billsec,
@@ -456,10 +459,15 @@ class Cdr_Controller extends Base_Controller
         $related_queue_logs = self::get_queue_logs_by_linkedid($cdr->linkedid)->get();
 
         $total_billsec = $related_cdrs->sum('billsec');
+        $total_duration = $related_cdrs->sum('duration');
+
+        // SimpleCollection'da total diye bir alan yok; sayfalayıcıya null
+        // geçilince "Toplam arama sayısı" boş kalıyordu.
+        $related_total = count($related_cdrs);
 
         $related_cdrs->order_by($sort, $dir);
 
-        $related_cdrs = PaginatorSorter::make($related_cdrs->results, $related_cdrs->total, $per_page, $default_sort);
+        $related_cdrs = PaginatorSorter::make($related_cdrs->results, $related_total, $per_page, $default_sort);
 
         $note = '';
         if (Config::get('application.note')) {
@@ -478,6 +486,7 @@ class Cdr_Controller extends Base_Controller
             'filefield' => $filefield,
             'per_page_options' => Cdr::$per_page_options,
             'total_billsec' => $total_billsec,
+            'total_duration' => $total_duration,
             'buttons_download' => Auth::user()->buttons_download,
             'buttons_listen' => Auth::user()->buttons_listen,
             'display_agent_billsec' => false,
@@ -513,14 +522,18 @@ class Cdr_Controller extends Base_Controller
             return;
         }
 
-        $cels = DB::table('cel')
-            ->where('eventtype', '=', 'BRIDGE_ENTER')
-            ->where_in('linkedid', array_keys($linkedids))
-            ->get(array('linkedid'));
-
+        // Excel çıktısında sayfalama olmadığı için liste çok uzun olabiliyor;
+        // IN listesini parçalara bölüyoruz.
         $bridged = array();
-        foreach ($cels as $cel) {
-            $bridged[$cel->linkedid] = true;
+        foreach (array_chunk(array_keys($linkedids), 1000) as $chunk) {
+            $cels = DB::table('cel')
+                ->where('eventtype', '=', 'BRIDGE_ENTER')
+                ->where_in('linkedid', $chunk)
+                ->get(array('linkedid'));
+
+            foreach ($cels as $cel) {
+                $bridged[$cel->linkedid] = true;
+            }
         }
 
         foreach ($rows as $row) {
@@ -865,6 +878,78 @@ HTML;
                 return Response::download($abs_path, $file['name']);
             }
         }
+    }
+
+    /**
+     * Ham SQL sonucundan Excel çıktısı üretir.
+     *
+     * Liste sorgusu ham SQL'e taşındığında bu fonksiyon eksik kalmış, çağrısı
+     * yazılmış ama gövdesi yazılmamıştı; eski export_to_excel() bir query
+     * nesnesi beklediği için kullanılamıyor.
+     */
+    private static function export_to_excel_raw($sql, $bindings)
+    {
+        require 'libraries/xlsxwriter.class.php';
+
+        $columns = array(
+            'calldate'    => 'Tarih - Saat',
+            'did'         => 'DID',
+            'clid'        => 'Arayan Tanımı',
+            'src'         => 'Arayan',
+            'dst'         => 'Aranan',
+            'dstchannel'  => 'Aranan Kanal',
+            'accountcode' => 'Hesap Kodu',
+            'disposition' => 'Durum',
+            'billsec'     => 'Görüşme',
+            'duration'    => 'Toplam',
+        );
+
+        foreach (array('did', 'clid', 'dstchannel', 'accountcode') as $col) {
+            if (!Config::get("application.$col")) {
+                unset($columns[$col]);
+            }
+        }
+
+        $cdrs = DB::query($sql, $bindings);
+
+        self::mark_bridged($cdrs);
+
+        $data = array(array_values($columns));
+
+        foreach ($cdrs as $cdr) {
+            $data_row = array();
+
+            foreach ($columns as $column => $column_title) {
+                if ($column == 'dst') {
+                    $value = Cdr::format_dst($cdr);
+                } elseif ($column == 'src') {
+                    $value = Cdr::format_src_dst($cdr, 'src');
+                } elseif ($column == 'disposition') {
+                    $value = Lang::line('misc.' . Cdr::display_disposition($cdr))->get();
+                } elseif ($column == 'billsec') {
+                    $value = Cdr::format_talk_duration($cdr);
+                } elseif ($column == 'duration') {
+                    $value = Cdr::format_duration($cdr->duration);
+                } else {
+                    // did ve accountcode v_cdr'de yok; kolon açıksa boş geçilir.
+                    $value = isset($cdr->$column) ? $cdr->$column : '';
+                }
+
+                $data_row[] = $value;
+            }
+
+            $data[] = $data_row;
+        }
+
+        $writer = new XLSXWriter();
+        $writer->writeSheet($data);
+
+        $filename = 'Çağrı Kayıtları.xlsx';
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        $writer->writeToStdOut();
+        exit;
     }
 
     private static function export_to_excel($query)

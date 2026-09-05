@@ -113,6 +113,7 @@
         <tr>
             <td colspan="11">
                 <strong>Toplam arama sayısı: </strong>{{ $cdrs->total }}<br>
+                <strong>Toplam süre: </strong>{{ Cdr::format_duration($total_duration) }}<br>
                 <strong>Toplam görüşme süresi: </strong>{{ Cdr::format_duration($total_billsec) }}
             </td>
         </tr>
