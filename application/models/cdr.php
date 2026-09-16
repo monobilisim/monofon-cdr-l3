@@ -26,29 +26,52 @@ class Cdr extends Eloquent
     /**
      * Ekranda gösterilecek çağrı durumu.
      *
-     * Asterisk'in disposition alanı bazı aktarma senaryolarında konuşma
-     * gerçekleştiği halde NO ANSWER kalıyor. Bu durumda satır, aynı linkedid
-     * altında köprülenme olup olmadığına göre yükseltilir; bkz.
+     * Asterisk'in disposition alanı iki yönde de yanılıyor: aktarma
+     * senaryolarında konuşma yapıldığı halde NO ANSWER kalıyor, gelen çağrıyı
+     * IVR karşıladığında ise kimse açmasa bile ANSWERED yazıyor. Ölçüt olarak
+     * aynı linkedid altında köprülenme olup olmadığı kullanılır; bkz.
      * Cdr_Controller::mark_bridged().
-     *
-     * Durum yalnızca yükseltilir, asla düşürülmez: IVR'a düşüp kapanan bir
-     * çağrı ANSWERED kalır, çünkü arayan sisteme ulaşmıştır.
      */
     public static function display_disposition($cdr)
     {
-        return self::has_conversation($cdr) ? 'ANSWERED' : $cdr->disposition;
+        if (self::has_conversation($cdr)) {
+            return 'ANSWERED';
+        }
+
+        if ($cdr->disposition !== 'ANSWERED') {
+            return $cdr->disposition;
+        }
+
+        // Köprülenmemiş çağrıda ANSWERED'ı yazan IVR'dır, kimse açmamıştır.
+        // Çağrının nasıl bittiğini lastapp söylüyor: Busy ile biten çağrı
+        // FreePBX'in s-BUSY (dahili meşgul), Congestion ile biten ise
+        // s-CHANUNAVAIL (dahiliye ulaşılamıyor) koluna düşmüş demektir.
+        $lastapp = isset($cdr->lastapp) ? $cdr->lastapp : '';
+
+        if ($lastapp === 'Busy') {
+            return 'BUSY';
+        }
+
+        if ($lastapp === 'Congestion') {
+            return 'FAILED';
+        }
+
+        return 'NO ANSWER';
     }
 
     /**
-     * Çağrıda gerçek bir görüşme yapılıp yapılmadığı.
-     *
-     * disposition = ANSWERED olan satırlarda başka kanıt aranmaz. Aksi halde
-     * Cdr_Controller::mark_bridged() tarafından doldurulan bridged bayrağına
-     * bakılır; o bayrak yalnızca ANSWERED olmayan satırlar için sorgulanır.
+     * Çağrıda gerçek bir görüşme yapılıp yapılmadığı: tek ölçüt
+     * Cdr_Controller::mark_bridged() tarafından doldurulan bridged bayrağıdır.
      */
     public static function has_conversation($cdr)
     {
-        return $cdr->disposition === 'ANSWERED' || !empty($cdr->bridged);
+        // Bayrak hesaplanmadıysa (mark_bridged çağrılmamış) CDR'ın kendi
+        // disposition'ına düşülür.
+        if (!isset($cdr->bridged)) {
+            return $cdr->disposition === 'ANSWERED';
+        }
+
+        return (bool) $cdr->bridged;
     }
 
     /**

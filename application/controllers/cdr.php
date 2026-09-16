@@ -79,6 +79,15 @@ class SimpleCollection implements IteratorAggregate, Countable
 
 class Cdr_Controller extends Base_Controller
 {
+    /**
+     * Sonuç kümesi bu satır sayısını aşmadıkça liste sorgusu sayfa yerine
+     * tamamını çeker ve "Toplam görüşme süresi" tam ölçütle (CEL
+     * BRIDGE_ENTER) hesaplanır; üzerinde SQL yaklaşımı kullanılır. Sınır,
+     * satırları bellekte tutmanın ve her 1000 linkedid için bir CEL
+     * sorgusunun (~0,1 sn) fark edilmediği aralık.
+     */
+    public static $exact_total_limit = 2000;
+
     public function before()
     {
         parent::before();
@@ -162,8 +171,12 @@ class Cdr_Controller extends Base_Controller
                 -- cevapladığında billsec, dahili hiç açmasa bile işliyor. Tam
                 -- ölçüt CEL BRIDGE_ENTER ama sayfa değil TÜM filtre kümesi için
                 -- çalıştığından geniş aralıkta sorguyu ikiye katlıyor; burada
-                -- disposition ile yaklaşıyoruz (bkz. mark_bridged).
+                -- disposition + lastapp ile yaklaşıyoruz (bkz. mark_bridged).
+                -- Köprülenen çağrıların lastapp'i neredeyse her zaman Dial ya
+                -- da Queue; IVR/anons/voicemail satırları böyle eleniyor.
+                -- 8 günlük ölçümde sapma %1,5'ten %-0,4'e indi.
                 COALESCE(SUM(CASE WHEN ranked.disposition = 'ANSWERED'
+                                   AND ranked.lastapp IN ('Dial', 'Queue')
                                   THEN ranked.billsec ELSE 0 END), 0) AS total_billsec,
                 COALESCE(SUM(ranked.duration), 0) AS total_duration
             $baseSql
@@ -313,14 +326,31 @@ class Cdr_Controller extends Base_Controller
             self::export_to_excel_raw($exportSql, $filterBindings);
         }
 
-        // Paginated data
         $page   = Paginator::page($total, $per_page);
         $offset = ($page - 1) * $per_page;
 
-        $dataBindings = array_merge($filterBindings, array((int) $per_page, (int) $offset));
-        $results = DB::query($dataSql, $dataBindings);
+        if ($total > 0 && $total <= self::$exact_total_limit) {
+            // Küçük kümede sayfa yerine tamamını çekiyoruz: sayfa buradan
+            // dilimleniyor, alt toplam da fazladan sorgu olmadan tam ölçütle
+            // hesaplanabiliyor.
+            $results = DB::query($dataSql, array_merge($filterBindings, array((int) $total, 0)));
 
-        self::mark_bridged($results);
+            self::mark_bridged($results);
+
+            $total_billsec = 0;
+            foreach ($results as $row) {
+                if (Cdr::has_conversation($row)) {
+                    $total_billsec += (int) $row->billsec;
+                }
+            }
+
+            $results = array_slice($results, $offset, $per_page);
+        } else {
+            $dataBindings = array_merge($filterBindings, array((int) $per_page, (int) $offset));
+            $results = DB::query($dataSql, $dataBindings);
+
+            self::mark_bridged($results);
+        }
 
         $cdrs = PaginatorSorter::make($results, $total, $per_page, $default_sort);
 
@@ -510,15 +540,22 @@ class Cdr_Controller extends Base_Controller
 
     /**
      * Çağrının gerçekten köprülendiği (yani konuşma yapıldığı) satırları
-     * işaretler. Aktarma güdüklerinde CDR satırı NO ANSWER kalır ama aynı
-     * linkedid altında CEL'de BRIDGE_ENTER olayı bulunur.
+     * işaretler.
      *
-     * Ölçüt olarak billsec ya da CEL ANSWER kullanılamaz: gelen çağrıyı IVR
-     * cevapladığında (AGI) ikisi de işlemeye başlıyor, aranan dahili hiç
-     * açmasa bile. İki kanalın köprülenmesi ise ancak gerçek görüşmede olur.
+     * Ölçüt olarak disposition, billsec ya da CEL ANSWER kullanılamaz; üçü de
+     * iki yönde birden yanılıyor:
+     *   - Aktarma güdüklerinde konuşma yapıldığı halde CDR satırı NO ANSWER
+     *     kalıyor.
+     *   - Gelen çağrıyı IVR karşıladığında (AGI/BackGround/WaitExten) ya da
+     *     aranan dahili meşgulken Busy anonsu çalındığında disposition
+     *     ANSWERED oluyor ve billsec işlemeye başlıyor; kimse açmamış olsa da.
+     * İki kanalın köprülenmesi ise ancak gerçek görüşmede olur. Dialplan'de
+     * MixMonitor "b" seçeneğiyle çağrıldığı için ses kaydının dolu olması da
+     * aynı koşula bağlı: köprülenmeyen çağrıda dosya boş (2693 bayt) kalıyor.
      *
-     * Sayfa başına tek sorgu atar ve cel.linkedid_index üzerinden çalışır.
-     * Varsayılan bağlantıyı değiştiren sorgulardan (queue_log) ÖNCE çağrılmalı.
+     * Satır kümesi başına tek sorgu atar ve cel.linkedid_index üzerinden
+     * çalışır. Varsayılan bağlantıyı değiştiren sorgulardan (queue_log) ÖNCE
+     * çağrılmalı.
      */
     private static function mark_bridged($rows)
     {
@@ -527,7 +564,7 @@ class Cdr_Controller extends Base_Controller
         foreach ($rows as $row) {
             $row->bridged = false;
 
-            if ($row->disposition !== 'ANSWERED' && !empty($row->linkedid)) {
+            if (!empty($row->linkedid)) {
                 $linkedids[$row->linkedid] = true;
             }
         }
