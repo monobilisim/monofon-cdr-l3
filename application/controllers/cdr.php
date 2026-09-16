@@ -105,6 +105,13 @@ class Cdr_Controller extends Base_Controller
         Asset::add('jquery-ui', 'jquery-ui/smoothness/jquery-ui-1.9.1.custom.min.css');
 
         Config::set('database.default', 'asterisk');
+
+        // Geniş tarih aralıklı filtresiz liste, 200 bin çağrıda 30 sn'lik
+        // varsayılan sınıra dayanıyor: maliyetin tabanı 1,1 milyon satır
+        // üzerindeki ROW_NUMBER() sıralaması ve sorgu başına ~14 sn.
+        // Sınır yalnızca bu uygulama için yükseltiliyor; php.ini paylaşımlı
+        // ve FPM havuzunda request_terminate_timeout = 0.
+        set_time_limit(60);
     }
 
     public function action_index()
@@ -137,31 +144,63 @@ class Cdr_Controller extends Base_Controller
         // Alias WHERE'de görünmediği için ifadenin kendisi filtrelere de veriliyor.
         $dstRealExpr = Cdr::dst_real_sql();
 
-        $baseSql = "
-            FROM (
-                SELECT
-                    v_cdr.*,
+        $rankedSql = "
+            SELECT
+                v_cdr.*,
 
-                    $dstRealExpr AS dst_real,
+                $dstRealExpr AS dst_real,
 
-                    ROW_NUMBER() OVER (
-                        PARTITION BY linkedid
-                        ORDER BY
-                            recordingfile != '' DESC,
-                            billsec DESC,
-                            duration DESC,
-                            calldate DESC,
-                            uniqueid ASC
-                    ) AS rn
-                FROM v_cdr
-                WHERE $innerWhereSql
-            ) ranked
+                ROW_NUMBER() OVER (
+                    PARTITION BY linkedid
+                    ORDER BY
+                        recordingfile != '' DESC,
+                        billsec DESC,
+                        duration DESC,
+                        calldate DESC,
+                        uniqueid ASC
+                ) AS rn
+            FROM v_cdr
+            WHERE $innerWhereSql
+        ";
+
+        // Hepsi tekil anahtar üzerinden bakılan sözlük tabloları; satır
+        // çoğaltmazlar.
+        $joinsSql = "
             LEFT JOIN asterisk.ringgroups ON ranked.dst = asterisk.ringgroups.grpnum
             LEFT JOIN asterisk.users AS users_src ON ranked.src = users_src.extension
             LEFT JOIN asterisk.users AS users_dst ON ranked.dst_real = users_dst.extension
             LEFT JOIN cdrapp.notes AS notes ON ranked.uniqueid = notes.uniqueid
             $tagJoin
+        ";
+
+        $baseSql = "
+            FROM ($rankedSql) ranked
+            $joinsSql
             WHERE $outerWhereSql
+        ";
+
+        // Toplamlar sorgusu JOIN'lenen hiçbir sütuna bakmıyor; birleştirmeyi
+        // atlamak 31 günlük listede bu sorguyu 159 sn'den 14 sn'ye indiriyor.
+        $countBaseSql = "
+            FROM ($rankedSql) ranked
+            WHERE $outerWhereSql
+        ";
+
+        // Liste sayfası için: sayfaya girecek satırlar JOIN'lerden ÖNCE
+        // seçilir. asterisk.users ile birleştirme indeks kullanamadığından
+        // (farklı şema, BNL join) maliyet birleştirilen satır sayısıyla doğru
+        // orantılı; 31 günlük filtresiz listede 200 bin satır yerine 10 satır
+        // birleştirmek sorguyu 2 dk 38 sn'den 16 sn'ye indiriyor. Yalnızca
+        // JOIN'lenen tabloya bakan bir filtre yokken kullanılabilir.
+        $pagedBaseSql = "
+            FROM (
+                SELECT ranked.*
+                FROM ($rankedSql) ranked
+                WHERE $outerWhereSql
+                ORDER BY $orderBySql
+                LIMIT ? OFFSET ?
+            ) ranked
+            $joinsSql
         ";
 
         $totalsSqlTemplate = "
@@ -179,7 +218,7 @@ class Cdr_Controller extends Base_Controller
                                    AND ranked.lastapp IN ('Dial', 'Queue')
                                   THEN ranked.billsec ELSE 0 END), 0) AS total_billsec,
                 COALESCE(SUM(ranked.duration), 0) AS total_duration
-            $baseSql
+            __COUNT_BASE__
         ";
 
         // ranked.* zaten hem dst (çevrilen numara) hem dst_real (çağrıyı alan
@@ -194,6 +233,17 @@ class Cdr_Controller extends Base_Controller
             $baseSql
             ORDER BY $orderBySql
             LIMIT ? OFFSET ?
+        ";
+
+        $pagedDataSqlTemplate = "
+            SELECT ranked.*,
+                asterisk.ringgroups.description,
+                users_src.name AS src_name,
+                users_dst.name AS dst_name,
+                notes.note
+                $tagSelect
+            $pagedBaseSql
+            ORDER BY $orderBySql
         ";
 
         $exportSqlTemplate = "
@@ -305,8 +355,17 @@ class Cdr_Controller extends Base_Controller
             '__ORDER_BY__'    => "ranked.$sortCol $sortDir",
         );
 
+        // tag/note filtreleri JOIN'lenen tablolara baktığı için o durumda
+        // sayfayı önden seçemiyoruz.
+        $joinFiltersUsed = count($outerClauses) > 1;
+
+        // __COUNT_BASE__ kendisi de yer tutucu içerdiği için önce o
+        // yerleştirilir; strtr değiştirdiği metni yeniden taramaz.
+        $countBase = array('__COUNT_BASE__' => $joinFiltersUsed ? $baseSql : $countBaseSql);
+        $totalsSqlTemplate = strtr($totalsSqlTemplate, $countBase);
+
         $totalsSql = strtr($totalsSqlTemplate, $replacements);
-        $dataSql   = strtr($dataSqlTemplate,   $replacements);
+        $dataSql   = strtr($joinFiltersUsed ? $dataSqlTemplate : $pagedDataSqlTemplate, $replacements);
         $exportSql = strtr($exportSqlTemplate, $replacements);
 
         $filterBindings = array_merge($innerBindings, $outerBindings);
