@@ -16,16 +16,22 @@ class V_Cdr {
         CREATE OR REPLACE VIEW v_cdr AS
             SELECT
                 calldate,
-                uniqueid,
+                clid,
                 IF(cnum != '', cnum, src) AS src,
                 dst,
-                cnum,
+                dcontext,
                 channel,
+                dstchannel,
+                lastapp,
+                lastdata,
                 duration,
                 billsec,
                 disposition,
+                uniqueid,
+                linkedid,
                 recordingfile,
-                linkedid
+                cnum,
+                cnam
             FROM cdr;
 
         */
