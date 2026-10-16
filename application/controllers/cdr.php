@@ -265,7 +265,25 @@ class Cdr_Controller extends Base_Controller
         // =========================================================================
 
         // --- Inner filters (apply to v_cdr columns, before ranking) ---
-        $innerClauses = array('v_cdr.calldate BETWEEN ? AND ?');
+
+        // Tarih aralığı satıra değil çağrının başlangıcına uygulanıyor.
+        // calldate ile filtrelendiğinde aralık sınırını aşan çağrının yalnız
+        // bir kısmı sıralamaya giriyordu: 23:57'de kuyruğa girip 23:59:46'da
+        // cevaplanan çağrıda cevaplanan satır dışarıda kalıyor, listede ilk
+        // cevapsız deneme (Toplam 01:04) seçiliyor, Durum ve Görüşme ise
+        // CEL'den çağrının tamamına bakıyordu (04:19). linkedid çağrının ilk
+        // kanalının uniqueid'si, yani "<başlangıç epoch>.<sıra>" (canlı
+        // veride 1,7 milyon satırın tamamı bu biçimde, epoch ilk calldate ile
+        // 0-1 sn farkla aynı). Epoch 10 haneli olduğundan metin karşılaştırması
+        // zaman sırasını koruyor ve linkedid indeksi kullanılıyor; süre
+        // calldate aralığıyla aynı (31 günde ~3 sn). Bitiş dakika
+        // hassasiyetinde geldiği için o dakikanın sonuna kadar kapsanıyor.
+        // Epoch'a çevirme MySQL'de yapılıyor ki calldate ile aynı saat
+        // dilimini kullansın.
+        $innerClauses = array(
+            'v_cdr.linkedid >= CAST(UNIX_TIMESTAMP(?) AS CHAR)',
+            'v_cdr.linkedid < CAST(UNIX_TIMESTAMP(?) + 60 AS CHAR)',
+        );
         $innerBindings = array($datestart, $dateend);
 
         if (!Auth::user()->allrows) {
