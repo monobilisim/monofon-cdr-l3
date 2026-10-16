@@ -88,7 +88,29 @@ class Cdr extends Eloquent
             return '—';
         }
 
-        return self::format_duration($cdr->billsec);
+        return self::format_duration(self::talk_seconds($cdr));
+    }
+
+    /**
+     * Görüşmenin saniye cinsinden uzunluğu.
+     *
+     * Ölçüt CEL'den hesaplanan köprülenme süresidir (bkz.
+     * Cdr_Controller::mark_bridged): billsec, gelen çağrıyı IVR karşıladığında
+     * konuşma başlamadan işlemeye başlıyor ve kuyrukta/IVR'da geçen süreyi de
+     * sayıyor — ölçülen bir çağrıda billsec 143 sn iken gerçek görüşme 13 sn.
+     * Ses kaydı da (MixMonitor "b" seçeneği) yalnızca köprülüyken yazıldığı
+     * için bu değer oynatıcıda görünen süreyle örtüşür.
+     *
+     * Köprülenme süresi hesaplanamadıysa (mark_bridged çağrılmamış ya da CEL'de
+     * kanalın çıkışı görünmüyor) billsec'e düşülür.
+     */
+    public static function talk_seconds($cdr)
+    {
+        if (isset($cdr->bridge_seconds)) {
+            return (int) $cdr->bridge_seconds;
+        }
+
+        return (int) $cdr->billsec;
     }
 
     public static function format_src_dst($cdr, $type)

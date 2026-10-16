@@ -213,7 +213,10 @@ class Cdr_Controller extends Base_Controller
                 -- disposition + lastapp ile yaklaşıyoruz (bkz. mark_bridged).
                 -- Köprülenen çağrıların lastapp'i neredeyse her zaman Dial ya
                 -- da Queue; IVR/anons/voicemail satırları böyle eleniyor.
-                -- 8 günlük ölçümde sapma %1,5'ten %-0,4'e indi.
+                -- Yine de bu yol billsec topladığı için şişkin kalır: ölçülen
+                -- bir günde tam ölçüt 23:50:32 iken bu yaklaşım 32:48:26
+                -- veriyordu (IVR/kuyruk beklemesi). exact_total_limit altında
+                -- kalan kümelerde toplam, aşağıda CEL'den tam hesaplanıyor.
                 COALESCE(SUM(CASE WHEN ranked.disposition = 'ANSWERED'
                                    AND ranked.lastapp IN ('Dial', 'Queue')
                                   THEN ranked.billsec ELSE 0 END), 0) AS total_billsec,
@@ -399,7 +402,7 @@ class Cdr_Controller extends Base_Controller
             $total_billsec = 0;
             foreach ($results as $row) {
                 if (Cdr::has_conversation($row)) {
-                    $total_billsec += (int) $row->billsec;
+                    $total_billsec += Cdr::talk_seconds($row);
                 }
             }
 
@@ -558,7 +561,7 @@ class Cdr_Controller extends Base_Controller
         $total_billsec = 0;
         foreach ($related_cdrs as $related_row) {
             if (Cdr::has_conversation($related_row)) {
-                $total_billsec += $related_row->billsec;
+                $total_billsec += Cdr::talk_seconds($related_row);
             }
         }
 
@@ -622,6 +625,7 @@ class Cdr_Controller extends Base_Controller
 
         foreach ($rows as $row) {
             $row->bridged = false;
+            $row->bridge_seconds = null;
 
             if (!empty($row->linkedid)) {
                 $linkedids[$row->linkedid] = true;
@@ -635,20 +639,59 @@ class Cdr_Controller extends Base_Controller
         // Excel çıktısında sayfalama olmadığı için liste çok uzun olabiliyor;
         // IN listesini parçalara bölüyoruz.
         $bridged = array();
+        $seconds = array();
+
         foreach (array_chunk(array_keys($linkedids), 1000) as $chunk) {
-            $cels = DB::table('cel')
-                ->where('eventtype', '=', 'BRIDGE_ENTER')
-                ->where_in('linkedid', $chunk)
-                ->get(array('linkedid'));
+            $placeholders = implode(',', array_fill(0, count($chunk), '?'));
+
+            // Kanal başına köprüde geçen süre: çıkış zamanlarının toplamından
+            // giriş zamanlarının toplamı düşülür, yani her (ENTER, EXIT)
+            // aralığının uzunluğu. Beklemede kanal köprüden çıktığı için
+            // bekleme süresi kendiliğinden dışarıda kalır — ses kaydı da
+            // (MixMonitor "b") aynı anlarda duraklar.
+            //
+            // Çağrının süresi olarak kanallar arasındaki en uzunu alınır:
+            // arayanın kanalı görüşme boyunca köprüde kalır, bacaklar kısadır.
+            // Dengesiz (çıkışı görünmeyen) kanallar süre hesabına katılmaz ama
+            // bridged bayrağını düşürmez; bayrak yalnız ENTER varlığına bakar.
+            $cels = DB::query("
+                SELECT linkedid,
+                       SUM(n_enter) AS enters,
+                       MAX(CASE WHEN n_enter = n_exit THEN bridged_seconds END) AS bridged_seconds
+                FROM (
+                    SELECT linkedid, channame,
+                           SUM(eventtype = 'BRIDGE_ENTER') AS n_enter,
+                           SUM(eventtype = 'BRIDGE_EXIT') AS n_exit,
+                           SUM(CASE eventtype
+                                   WHEN 'BRIDGE_EXIT' THEN UNIX_TIMESTAMP(eventtime)
+                                   ELSE -UNIX_TIMESTAMP(eventtime)
+                               END) AS bridged_seconds
+                    FROM cel
+                    WHERE eventtype IN ('BRIDGE_ENTER', 'BRIDGE_EXIT')
+                      AND linkedid IN ($placeholders)
+                    GROUP BY linkedid, channame
+                ) per_channel
+                GROUP BY linkedid
+            ", $chunk);
 
             foreach ($cels as $cel) {
-                $bridged[$cel->linkedid] = true;
+                if ($cel->enters > 0) {
+                    $bridged[$cel->linkedid] = true;
+                }
+
+                if ($cel->bridged_seconds !== null) {
+                    $seconds[$cel->linkedid] = max(0, (int) $cel->bridged_seconds);
+                }
             }
         }
 
         foreach ($rows as $row) {
             if (isset($bridged[$row->linkedid])) {
                 $row->bridged = true;
+            }
+
+            if (isset($seconds[$row->linkedid])) {
+                $row->bridge_seconds = $seconds[$row->linkedid];
             }
         }
     }
