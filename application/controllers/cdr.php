@@ -657,18 +657,11 @@ class Cdr_Controller extends Base_Controller
     {
         $related_cels = self::get_cels_by_linkedid($linkedid)->get();
 
-        $call_transferred = false;
         $agent_exten = null;
         $last_event = null;
         $billsec = 0;
 
         foreach ($related_cels as $cel) {
-            // Eğer bir BLINDTRANSFER veya ATTENDEDTRANSFER event'i varsa
-            // çağrı transfer edilmiştir
-            if (in_array($cel->eventtype, array('BLINDTRANSFER', 'ATTENDEDTRANSFER'))) {
-                $call_transferred = true;
-            }
-
             // Temsilcinin dahilisi henüz tespit edilmemişken gelen
             // ilk from-internal context'indeki ANSWER event'inin
             // exten'i temsilcinin dahilisidir.
