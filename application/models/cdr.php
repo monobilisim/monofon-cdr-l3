@@ -368,7 +368,9 @@ class Cdr extends Eloquent
             return null;
         }
 
-        $key = ($file['path'] !== '' ? $file['path'] . '/' : '') . $file['name'];
+        // bucket ayrı tanımlıysa yola eklenir; tanımlı değilse base URL bucket'ı içeriyordur
+        $bucket = trim((string) Config::get('application.remote_bucket'), '/');
+        $key = ($bucket !== '' ? $bucket . '/' : '') . ($file['path'] !== '' ? $file['path'] . '/' : '') . $file['name'];
         $url = rtrim($remote_base_url, '/') . '/' . S3Presigner::encode_path($key);
 
         if (!Config::get('application.remote_key')) {
