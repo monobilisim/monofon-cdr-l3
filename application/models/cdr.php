@@ -348,39 +348,86 @@ class Cdr extends Eloquent
             return (int) filesize($abs_path);
         }
 
-        $remote_base_url = Config::get('application.remote_base_url');
-        if (!$remote_base_url) {
+        if (!Config::get('application.remote_base_url')) {
             return 0;
         }
 
-        $url = $remote_base_url . '/' . $file['path'] . '/' . urlencode($file['name']);
-        return self::remote_file_size($url);
+        return self::remote_file_size($file);
     }
 
-    private static function remote_file_size($url)
+    /**
+     * Uzak depodaki (Versity Gateway, Minio vb. S3 uyumlu) dosyanın URL'i; uzak
+     * depo tanımlı değilse null. Erişim anahtarı tanımlıysa URL SigV4 ile
+     * imzalanır (private bucket). İmza metoda bağlı olduğundan HEAD isteği için
+     * $method = 'HEAD' verilmeli.
+     */
+    public static function remote_url($file, $method = 'GET')
+    {
+        $remote_base_url = Config::get('application.remote_base_url');
+        if (!$remote_base_url) {
+            return null;
+        }
+
+        $key = ($file['path'] !== '' ? $file['path'] . '/' : '') . $file['name'];
+        $url = rtrim($remote_base_url, '/') . '/' . S3Presigner::encode_path($key);
+
+        if (!Config::get('application.remote_key')) {
+            return $url;
+        }
+
+        $presigner = new S3Presigner(Config::get('application.remote_key'), Config::get('application.remote_secret'), Config::get('application.remote_region', 'us-east-1'));
+        return $presigner->presign($url, $method, (int) Config::get('application.remote_url_ttl', 300));
+    }
+
+    private static function remote_file_size($file)
     {
         static $sizes = array();
 
-        if (array_key_exists($url, $sizes)) {
-            return $sizes[$url];
+        // imzalı URL her istekte değiştiği için önbellek anahtarı dosya yolu
+        $cache_key = $file['path'] . '/' . $file['name'];
+        if (array_key_exists($cache_key, $sizes)) {
+            return $sizes[$cache_key];
         }
 
         stream_context_set_default(array('http' => array('method' => 'HEAD', 'timeout' => 3)));
-        $headers = @get_headers($url, 1);
+        $headers = @get_headers(self::remote_url($file, 'HEAD'), 1);
         stream_context_set_default(array('http' => array('method' => 'GET')));
 
-        $size = null;
-        if ($headers) {
-            $length = isset($headers['Content-Length']) ? $headers['Content-Length'] : null;
-            if (is_array($length)) {
-                $length = end($length);
-            }
-            if ($length !== null) {
-                $size = (int) $length;
+        $sizes[$cache_key] = self::size_from_headers($headers);
+        return $sizes[$cache_key];
+    }
+
+    /**
+     * get_headers() çıktısından dosya boyutu: 2xx ise Content-Length, dosya yok
+     * (404) ya da erişim reddedildi (403; ListBucket yetkisi yoksa S3 olmayan
+     * dosya için de 403 döner) ise 0, tespit edilemiyorsa null.
+     */
+    public static function size_from_headers($headers)
+    {
+        if (!$headers) {
+            return null;
+        }
+
+        // yönlendirme varsa birden fazla durum satırı olur, sonuncusu geçerli
+        $status = null;
+        foreach ($headers as $k => $v) {
+            if (is_int($k) && preg_match('#^HTTP/\S+\s+(\d{3})#', $v, $m)) {
+                $status = (int) $m[1];
             }
         }
 
-        $sizes[$url] = $size;
-        return $size;
+        if ($status === 403 || $status === 404) {
+            return 0;
+        }
+        if ($status === null || $status < 200 || $status >= 300) {
+            return null;
+        }
+
+        $length = isset($headers['Content-Length']) ? $headers['Content-Length'] : (isset($headers['content-length']) ? $headers['content-length'] : null);
+        if (is_array($length)) {
+            $length = end($length);
+        }
+
+        return $length !== null ? (int) $length : null;
     }
 }
