@@ -145,6 +145,34 @@ class Cdr extends Eloquent
         return $url;
     }
 
+    /**
+     * Ses kaydının uzak depodaki (S3 uyumlu gateway) adresi.
+     *
+     * remote_key tanımlıysa URL SigV4 ile imzalanır (private bucket); imza
+     * metoda bağlı olduğundan HEAD isteği için ayrıca imzalanmalıdır.
+     * remote_key boşsa URL imzasız döner (public bucket) — eski davranış.
+     */
+    public static function remote_url($file, $method = 'GET')
+    {
+        $remote_base_url = Config::get('application.remote_base_url');
+        if (!$remote_base_url) {
+            return null;
+        }
+
+        // bucket ayrı tanımlıysa yola eklenir; tanımlı değilse base URL bucket'ı içeriyordur
+        $bucket = trim((string) Config::get('application.remote_bucket'), '/');
+        $key = ($bucket !== '' ? $bucket . '/' : '') . ($file['path'] !== '' ? $file['path'] . '/' : '') . $file['name'];
+        $url = rtrim($remote_base_url, '/') . '/' . S3Presigner::encode_path($key);
+
+        if (!Config::get('application.remote_key')) {
+            return $url;
+        }
+
+        $presigner = new S3Presigner(Config::get('application.remote_key'), Config::get('application.remote_secret'), Config::get('application.remote_region', 'us-east-1'));
+
+        return $presigner->presign($url, $method, (int) Config::get('application.remote_url_ttl', 300));
+    }
+
     public static function getTemporaryOggDir()
     {
         return path('storage') . 'tmp';

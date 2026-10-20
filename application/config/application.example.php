@@ -192,6 +192,11 @@ return array(
 	'agent_billsec'	=> false,
 	'call_tags'		=> false,
 	'note'			=> false,
-	'remote_base_url' => false, // Ses dosyaları Minio vb. bir yerde tutuluyorsa "http://10.10.10.10:9000" biçiminde URL
+	'remote_base_url' => false, // Ses dosyaları S3 uyumlu depoda (Versity Gateway, Minio vb.) ise gateway adresi, örn. "http://10.10.10.10:7070"
+	'remote_bucket'   => null, // Kayıtların bulunduğu bucket (alt klasördeyse önekle, örn. "kayitlar/monitor"); boşsa remote_base_url bucket'ı içeriyor sayılır
+	'remote_key'      => null, // Private bucket için salt okunur erişim anahtarı; boşsa istekler imzasız gider
+	'remote_secret'   => null,
+	'remote_region'   => 'us-east-1', // Gateway'in region'ı ile aynı olmalı, yoksa imza tutmaz
+	'remote_url_ttl'  => 300, // İmzalı URL geçerlilik süresi (sn)
 
 );

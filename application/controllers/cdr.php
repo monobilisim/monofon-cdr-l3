@@ -553,8 +553,8 @@ HTML;
 
         $file_url = null;
         if (!file_exists('file://' . $abs_path)) {
-            $remote_base_url = Config::get('application.remote_base_url');
-            $file_url = $remote_base_url . '/' . $file['path'] . '/' . urlencode($file['name']);
+            // Private bucket'ta URL imzalanır; bkz. Cdr::remote_url()
+            $file_url = Cdr::remote_url($file);
         }
 
         $file_info = pathinfo($file['name']);
