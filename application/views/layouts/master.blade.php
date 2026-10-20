@@ -24,11 +24,11 @@
                     <li>{{ HTML::link('tag', 'Etiket Raporu') }}</li>
                 @endif
                 @if (Auth::check() AND Auth::user()->role === 'admin')
-                    <li>{{ HTML::link_to_action('user@index', 'Kullanıcı Yönetimi') }}</li>
+                    <li>{{ HTML::link('user/index', 'Kullanıcı Yönetimi') }}</li>
                 @endif
                 </ul>
                 <ul class="nav pull-right">
-                    <li>{{ HTML::link_to_action('home@logout', 'Çıkış') }}</li>
+                    <li>{{ HTML::link('logout', 'Çıkış') }}</li>
                 </ul>
             </div>
         </div>
