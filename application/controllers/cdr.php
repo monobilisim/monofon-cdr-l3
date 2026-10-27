@@ -574,9 +574,19 @@ HTML;
             return Response::download($abs_path_ogg, $file['name']);
         } else {
             if ($file_url) {
-                header('Content-Transfer-Encoding: Binary');
-                header('Content-Disposition: attachment; filename="' . $file['name'] . '"');
-                readfile($file_url);
+                // readfile() ile doğrudan yazıp hiçbir şey döndürmezsek Laravel layout'u da
+                // render edip dosyanın arkasına ekliyor; içeriği Response olarak döndürüyoruz
+                $content = @file_get_contents($file_url);
+                if ($content === false) {
+                    return Response::error('404');
+                }
+                $response = Response::make($content, 200, array(
+                    'Content-Description'       => 'File Transfer',
+                    'Content-Type'              => File::mime($file_info['extension']),
+                    'Content-Transfer-Encoding' => 'binary',
+                    'Content-Length'            => strlen($content),
+                ));
+                return $response->header('Content-Disposition', $response->disposition($file['name']));
             } else {
                 return Response::download($abs_path, $file['name']);
             }
